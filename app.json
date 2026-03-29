@@ -2,7 +2,7 @@
   "expo": {
     "name": "fitness-app",
     "slug": "fitness-app",
-    "version": "1.0.0",
+    "version": "0.1.0",
     "scheme": "fitness-app",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
@@ -18,12 +18,6 @@
       },
       "predictiveBackGestureEnabled": false
     },
-    "web": {
-      "bundler": "metro"
-    },
-    "plugins": [
-      "expo-sqlite",
-      "expo-router"
-    ]
+    "plugins": ["expo-sqlite", "expo-router"]
   }
 }
