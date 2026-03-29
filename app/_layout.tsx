@@ -4,6 +4,7 @@ import { Stack } from "expo-router";
 import { Text, View } from "react-native";
 import migrations from "../drizzle/migrations";
 import { db } from "../db";
+import { palette } from "../lib/palette";
 
 export default function RootLayout() {
 	const { success, error } = useMigrations(db, migrations);
@@ -28,7 +29,7 @@ export default function RootLayout() {
 		<Stack
 			screenOptions={{
 				headerShown: false,
-				contentStyle: { backgroundColor: "#000000" },
+				contentStyle: { backgroundColor: palette.background },
 			}}
 		/>
 	);
