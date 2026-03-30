@@ -3,19 +3,24 @@ import { eq } from "drizzle-orm";
 import { useLiveQuery } from "drizzle-orm/expo-sqlite";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { Alert, FlatList, Pressable, Text, View } from "react-native";
+import { Alert, FlatList, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { BottomDrawer } from "../../../components/BottomDrawer";
 import { Button } from "../../../components/Button";
+import { SearchField } from "../../../components/SearchField";
+import { Chip } from "../../../components/Chip";
 import { EmptyState } from "../../../components/EmptyState";
 import { ExerciseCard } from "../../../components/ExerciseCard";
 import { NumberField } from "../../../components/NumberField";
 import { ScreenHeader } from "../../../components/ScreenHeader";
 import { db } from "../../../db";
 import { sessionExercises, sessions } from "../../../db/schema";
-import { EXERCISES, type Exercise } from "../../../lib/exercises";
+import { EXERCISES, type Exercise, type MuscleGroup } from "../../../lib/exercises";
+import { palette } from "../../../lib/palette";
 
 export default function SessionScreen() {
+	const { t } = useTranslation();
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const sessionId = Number(id);
 
@@ -27,6 +32,7 @@ export default function SessionScreen() {
 	const [reps, setReps] = useState(10);
 	const [weight, setWeight] = useState(0);
 	const [restTime, setRestTime] = useState(90);
+	const [search, setSearch] = useState("");
 
 	const { data: sessionData } = useLiveQuery(
 		db.select().from(sessions).where(eq(sessions.id, sessionId)),
@@ -45,11 +51,12 @@ export default function SessionScreen() {
 		setReps(10);
 		setWeight(0);
 		setRestTime(90);
+		setSearch("");
 		setDrawerOpen(true);
 	}
 
 	function openEditDrawer(item: typeof sessionExercises.$inferSelect) {
-		const exercise = EXERCISES.find((e) => e.id === item.exerciseId) ?? null;
+		const exercise = EXERCISES.find((e) => e.nameKey === item.exerciseId) ?? null;
 		setEditingId(item.id);
 		setSelected(exercise);
 		setSets(item.sets);
@@ -62,12 +69,12 @@ export default function SessionScreen() {
 
 	function confirmDelete(itemId: number) {
 		Alert.alert(
-			"Supprimer l'exercice",
-			"Supprimer cet exercice ? Cette action est irréversible.",
+			t("exercises.deleteTitle"),
+			t("exercises.deleteMessage"),
 			[
-				{ text: "Annuler", style: "cancel" },
+				{ text: t("common.cancel"), style: "cancel" },
 				{
-					text: "Supprimer",
+					text: t("common.delete"),
 					style: "destructive",
 					onPress: async () => {
 						await db.delete(sessionExercises).where(eq(sessionExercises.id, itemId));
@@ -87,7 +94,7 @@ export default function SessionScreen() {
 		try {
 			await db.insert(sessionExercises).values({
 				sessionId,
-				exerciseId: selected.id,
+				exerciseId: selected.nameKey,
 				sets,
 				reps,
 				defaultWeight: weight > 0 ? weight : null,
@@ -116,15 +123,19 @@ export default function SessionScreen() {
 
 	const count = exerciseRows?.length ?? 0;
 
+	const filteredExercises = EXERCISES.filter((e) =>
+		t(`exercises.names.${e.nameKey}`).toLowerCase().includes(search.toLowerCase()),
+	);
+
 	return (
 		<SafeAreaView className="flex-1 bg-background" edges={["top"]}>
 			<ScreenHeader
 				title={session.name}
-				subtitle={`${count} exercise${count !== 1 ? "s" : ""}`}
+				subtitle={t("sessions.exerciseCount", { count })}
 				onBack={() => router.back()}
 				action={
 					<Button
-						label="Add"
+						label={t("common.add")}
 						startIcon={<Ionicons name="add" size={20} color="white" />}
 						onPress={openDrawer}
 					/>
@@ -133,7 +144,7 @@ export default function SessionScreen() {
 
 			<View className="flex-1 px-6 pt-2">
 				{count === 0 ? (
-					<EmptyState message="No exercises yet." hint='Tap "Add" to add one.' />
+					<EmptyState message={t("exercises.empty")} hint={t("exercises.emptyHint")} />
 				) : (
 					<FlatList
 						data={exerciseRows}
@@ -141,10 +152,14 @@ export default function SessionScreen() {
 						contentContainerStyle={{ paddingTop: 8, gap: 12 }}
 						showsVerticalScrollIndicator={false}
 						renderItem={({ item }) => {
-							const exercise = EXERCISES.find((e) => e.id === item.exerciseId);
+							const exercise = EXERCISES.find((e) => e.nameKey === item.exerciseId);
+							const name = exercise
+								? t(`exercises.names.${exercise.nameKey}`)
+								: item.exerciseId;
 							return (
 								<ExerciseCard
-									name={exercise?.name ?? `Exercise #${item.exerciseId}`}
+									name={name}
+									muscles={exercise?.muscles ?? []}
 									sets={item.sets}
 									reps={item.reps}
 									defaultWeight={item.defaultWeight ?? null}
@@ -162,45 +177,69 @@ export default function SessionScreen() {
 				visible={drawerOpen}
 				onClose={() => setDrawerOpen(false)}
 				onBack={step === 2 && !editingId ? () => setStep(1) : undefined}
-				title={step === 1 ? "Add exercise" : (selected?.name ?? "Configure")}
+				title={
+					step === 1
+						? t("exercises.addExercise")
+						: (selected ? t(`exercises.names.${selected.nameKey}`) : t("exercises.configure"))
+				}
 			>
 				{step === 1 ? (
-					<View className="gap-2">
-						{EXERCISES.map((exercise) => (
-							<Pressable
-								key={exercise.id}
-								onPress={() => pickExercise(exercise)}
-								className="active:opacity-70"
-							>
-								<View className="rounded-xl bg-background px-4 py-3">
-									<Text className="text-base font-medium text-foreground">{exercise.name}</Text>
-									<Text className="text-xs text-muted-foreground capitalize">
-										{exercise.muscleGroup}
-									</Text>
-								</View>
-							</Pressable>
-						))}
+					<View className="gap-3">
+						<SearchField
+						value={search}
+						onChangeText={setSearch}
+						placeholder={t("exercises.search")}
+					/>
+						<ScrollView showsVerticalScrollIndicator={false}>
+							<View className="gap-2">
+								{filteredExercises.map((exercise) => (
+									<Pressable
+										key={exercise.nameKey}
+										onPress={() => pickExercise(exercise)}
+										className="active:opacity-70"
+									>
+										<View className="flex-row items-center rounded-xl bg-background px-4 py-3">
+											<View className="flex-1 gap-1.5">
+												<Text className="text-base font-medium text-foreground">
+													{t(`exercises.names.${exercise.nameKey}`)}
+												</Text>
+												<View className="flex-row flex-wrap gap-1">
+													{exercise.muscles.map((m) => (
+														<Chip key={m} label={t(`exercises.muscleGroups.${m}`)} />
+													))}
+												</View>
+											</View>
+											<Ionicons name="chevron-forward" size={16} color={palette.muted.foreground} />
+										</View>
+									</Pressable>
+								))}
+							</View>
+						</ScrollView>
 					</View>
 				) : (
 					<View className="gap-4">
 						{selected && (
 							<View className="rounded-2xl bg-background px-5 py-4">
-								<Text className="text-base font-semibold text-foreground">{selected.name}</Text>
-								<Text className="mt-1 text-xs text-muted-foreground capitalize">
-									{selected.muscleGroup}
+								<Text className="text-base font-semibold text-foreground">
+									{t(`exercises.names.${selected.nameKey}`)}
 								</Text>
+								<View className="mt-2 flex-row flex-wrap gap-1">
+									{selected.muscles.map((m) => (
+										<Chip key={m} label={t(`exercises.muscleGroups.${m}`)} />
+									))}
+								</View>
 							</View>
 						)}
 						<View className="flex-row gap-3">
 							<View className="flex-1">
-								<NumberField label="Sets" value={sets} onValueChange={setSets} min={1} step={1} />
+								<NumberField label={t("exercises.sets")} value={sets} onValueChange={setSets} min={1} step={1} />
 							</View>
 							<View className="flex-1">
-								<NumberField label="Reps" value={reps} onValueChange={setReps} min={1} step={1} />
+								<NumberField label={t("exercises.reps")} value={reps} onValueChange={setReps} min={1} step={1} />
 							</View>
 						</View>
 						<NumberField
-							label="Default weight"
+							label={t("exercises.defaultWeight")}
 							value={weight}
 							onValueChange={setWeight}
 							min={0}
@@ -208,7 +247,7 @@ export default function SessionScreen() {
 							endAdornment="kg"
 						/>
 						<NumberField
-							label="Rest"
+							label={t("exercises.rest")}
 							value={restTime}
 							onValueChange={setRestTime}
 							min={0}
@@ -217,7 +256,7 @@ export default function SessionScreen() {
 						/>
 						<Button
 							fullWidth
-							label={editingId ? "Save" : "Add exercise"}
+							label={editingId ? t("common.save") : t("exercises.addExercise")}
 							onPress={editingId ? handleUpdate : handleAdd}
 						/>
 					</View>

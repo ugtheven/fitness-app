@@ -5,6 +5,7 @@ import { router } from "expo-router";
 import { useState } from "react";
 import { Alert, FlatList, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { BottomDrawer } from "../../components/BottomDrawer";
 import { Button } from "../../components/Button";
 import { EmptyState } from "../../components/EmptyState";
@@ -14,6 +15,7 @@ import { db } from "../../db";
 import { programs, sessions } from "../../db/schema";
 
 export default function ProgramsScreen() {
+	const { t } = useTranslation();
 	const [drawerOpen, setDrawerOpen] = useState(false);
 	const [programName, setProgramName] = useState("");
 
@@ -42,12 +44,12 @@ export default function ProgramsScreen() {
 
 	function handleDelete(id: number, name: string) {
 		Alert.alert(
-			"Supprimer le programme",
-			`Supprimer "${name}" ? Cette action est irréversible.`,
+			t("programs.deleteTitle"),
+			t("programs.deleteMessage", { name }),
 			[
-				{ text: "Annuler", style: "cancel" },
+				{ text: t("common.cancel"), style: "cancel" },
 				{
-					text: "Supprimer",
+					text: t("common.delete"),
 					style: "destructive",
 					onPress: async () => {
 						await db.delete(programs).where(eq(programs.id, id));
@@ -62,17 +64,17 @@ export default function ProgramsScreen() {
 			<View className="flex-1 px-6 pt-2">
 				<View className="flex-row items-center justify-between gap-3">
 					<Text className="min-w-0 shrink text-4xl font-bold text-foreground" numberOfLines={1}>
-						Programs
+						{t("programs.title")}
 					</Text>
 					<Button
-						label="New"
+						label={t("common.new")}
 						startIcon={<Ionicons name="add" size={20} color="white" />}
 						onPress={() => setDrawerOpen(true)}
 					/>
 				</View>
 
 				{data?.length === 0 ? (
-					<EmptyState message="No programs yet." hint='Tap "New" to create one.' />
+					<EmptyState message={t("programs.empty")} hint={t("programs.emptyHint")} />
 				) : (
 					<FlatList
 						data={data}
@@ -94,18 +96,18 @@ export default function ProgramsScreen() {
 				)}
 			</View>
 
-			<BottomDrawer visible={drawerOpen} onClose={() => setDrawerOpen(false)} title="New program">
+			<BottomDrawer visible={drawerOpen} onClose={() => setDrawerOpen(false)} title={t("programs.newProgram")}>
 				<View className="gap-4">
 					<TextField
-						label="Name"
+						label={t("common.name")}
 						value={programName}
 						onChangeText={setProgramName}
-						placeholder="Program name"
+						placeholder={t("programs.namePlaceholder")}
 						autoFocus
 						returnKeyType="done"
 						onSubmitEditing={handleCreate}
 					/>
-					<Button fullWidth label="Create" onPress={handleCreate} />
+					<Button fullWidth label={t("common.create")} onPress={handleCreate} />
 				</View>
 			</BottomDrawer>
 		</SafeAreaView>

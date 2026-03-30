@@ -1,10 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
-import { desc, eq, sql } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { useLiveQuery } from "drizzle-orm/expo-sqlite";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Alert, FlatList, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { BottomDrawer } from "../../components/BottomDrawer";
 import { Button } from "../../components/Button";
 import { EmptyState } from "../../components/EmptyState";
@@ -13,8 +14,10 @@ import { SessionCard } from "../../components/SessionCard";
 import { TextField } from "../../components/TextField";
 import { db } from "../../db";
 import { programs, sessionExercises, sessions } from "../../db/schema";
+import { EXERCISES, type MuscleGroup } from "../../lib/exercises";
 
 export default function ProgramScreen() {
+	const { t } = useTranslation();
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const programId = Number(id);
 
@@ -34,13 +37,12 @@ export default function ProgramScreen() {
 			.orderBy(desc(sessions.createdAt)),
 	);
 
-	const { data: exerciseCounts } = useLiveQuery(
+	const { data: sessionExRows } = useLiveQuery(
 		db
-			.select({ sessionId: sessionExercises.sessionId, count: sql<number>`count(*)` })
+			.select({ sessionId: sessionExercises.sessionId, exerciseId: sessionExercises.exerciseId })
 			.from(sessionExercises)
 			.innerJoin(sessions, eq(sessionExercises.sessionId, sessions.id))
-			.where(eq(sessions.programId, programId))
-			.groupBy(sessionExercises.sessionId),
+			.where(eq(sessions.programId, programId)),
 	);
 
 	async function handleCreate() {
@@ -62,12 +64,12 @@ export default function ProgramScreen() {
 
 	function handleDelete(sessionId: number, name: string) {
 		Alert.alert(
-			"Supprimer la session",
-			`Supprimer "${name}" ? Cette action est irréversible.`,
+			t("sessions.deleteTitle"),
+			t("sessions.deleteMessage", { name }),
 			[
-				{ text: "Annuler", style: "cancel" },
+				{ text: t("common.cancel"), style: "cancel" },
 				{
-					text: "Supprimer",
+					text: t("common.delete"),
 					style: "destructive",
 					onPress: async () => {
 						await db.delete(sessions).where(eq(sessions.id, sessionId));
@@ -85,11 +87,11 @@ export default function ProgramScreen() {
 		<SafeAreaView className="flex-1 bg-background" edges={["top"]}>
 			<ScreenHeader
 				title={program.name}
-				subtitle={`${sessionCount} session${sessionCount !== 1 ? "s" : ""}`}
+				subtitle={t("programs.sessionCount", { count: sessionCount })}
 				onBack={() => router.back()}
 				action={
 					<Button
-						label="New"
+						label={t("common.new")}
 						startIcon={<Ionicons name="add" size={20} color="white" />}
 						onPress={() => setDrawerOpen(true)}
 					/>
@@ -98,7 +100,7 @@ export default function ProgramScreen() {
 
 			<View className="flex-1 px-6 pt-2">
 				{sessionCount === 0 ? (
-					<EmptyState message="No sessions yet." hint='Tap "New" to add one.' />
+					<EmptyState message={t("sessions.empty")} hint={t("sessions.emptyHint")} />
 				) : (
 					<FlatList
 						data={sessionData}
@@ -106,12 +108,20 @@ export default function ProgramScreen() {
 						contentContainerStyle={{ paddingTop: 8, gap: 12 }}
 						showsVerticalScrollIndicator={false}
 						renderItem={({ item }) => {
-							const count =
-								exerciseCounts?.find((c) => c.sessionId === item.id)?.count ?? 0;
+							const rows = sessionExRows?.filter((r) => r.sessionId === item.id) ?? [];
+							const exerciseCount = rows.length;
+							const muscles = [
+								...new Set(
+									rows.flatMap(
+										(r) => EXERCISES.find((e) => e.nameKey === r.exerciseId)?.muscles ?? [],
+									),
+								),
+							] as MuscleGroup[];
 							return (
 								<SessionCard
 									name={item.name}
-									exerciseCount={count}
+									exerciseCount={exerciseCount}
+									muscles={muscles}
 									onPress={() => router.push(`/programs/session/${item.id}`)}
 									onDelete={() => handleDelete(item.id, item.name)}
 								/>
@@ -121,18 +131,18 @@ export default function ProgramScreen() {
 				)}
 			</View>
 
-			<BottomDrawer visible={drawerOpen} onClose={() => setDrawerOpen(false)} title="New session">
+			<BottomDrawer visible={drawerOpen} onClose={() => setDrawerOpen(false)} title={t("sessions.newSession")}>
 				<View className="gap-4">
 					<TextField
-						label="Name"
+						label={t("common.name")}
 						value={sessionName}
 						onChangeText={setSessionName}
-						placeholder="Session name"
+						placeholder={t("sessions.namePlaceholder")}
 						autoFocus
 						returnKeyType="done"
 						onSubmitEditing={handleCreate}
 					/>
-					<Button fullWidth label="Create" onPress={handleCreate} />
+					<Button fullWidth label={t("common.create")} onPress={handleCreate} />
 				</View>
 			</BottomDrawer>
 		</SafeAreaView>

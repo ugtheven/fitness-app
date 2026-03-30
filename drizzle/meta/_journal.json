@@ -22,6 +22,20 @@
       "when": 1774777000180,
       "tag": "0002_add_session_exercises",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1774777000181,
+      "tag": "0003_exercise_id_text",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1774777000182,
+      "tag": "0004_drop_program_exercises",
+      "breakpoints": true
     }
   ]
 }

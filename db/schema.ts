@@ -21,22 +21,9 @@ export const sessionExercises = sqliteTable("session_exercises", {
 	sessionId: int("session_id")
 		.notNull()
 		.references(() => sessions.id, { onDelete: "cascade" }),
-	exerciseId: int("exercise_id").notNull(),
+	exerciseId: text("exercise_id").notNull(),
 	sets: int("sets").notNull().default(3),
 	reps: int("reps").notNull().default(10),
 	defaultWeight: real("default_weight"),
-	restTime: int("rest_time").notNull().default(90),
-});
-
-export const programExercises = sqliteTable("program_exercises", {
-	id: int("id").primaryKey({ autoIncrement: true }),
-	programId: int("program_id")
-		.notNull()
-		.references(() => programs.id, { onDelete: "cascade" }),
-	exerciseId: int("exercise_id").notNull(),
-	order: int("order").notNull().default(0),
-	defaultWeight: real("default_weight"),
-	targetSets: int("target_sets").notNull().default(3),
-	targetReps: int("target_reps").notNull().default(10),
 	restTime: int("rest_time").notNull().default(90),
 });

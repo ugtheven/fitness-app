@@ -1,13 +1,20 @@
 import "../global.css";
 import { useMigrations } from "drizzle-orm/expo-sqlite/migrator";
 import { Stack } from "expo-router";
+import { useEffect, useState } from "react";
 import { Text, View } from "react-native";
 import migrations from "../drizzle/migrations";
 import { db } from "../db";
 import { palette } from "../lib/palette";
+import { initI18n } from "../lib/i18n";
 
 export default function RootLayout() {
 	const { success, error } = useMigrations(db, migrations);
+	const [i18nReady, setI18nReady] = useState(false);
+
+	useEffect(() => {
+		initI18n().then(() => setI18nReady(true));
+	}, []);
 
 	if (error) {
 		return (
@@ -17,10 +24,10 @@ export default function RootLayout() {
 		);
 	}
 
-	if (!success) {
+	if (!success || !i18nReady) {
 		return (
 			<View className="flex-1 bg-background items-center justify-center">
-				<Text className="text-muted-foreground">Migration is in progress...</Text>
+				<Text className="text-muted-foreground">Loading...</Text>
 			</View>
 		);
 	}
