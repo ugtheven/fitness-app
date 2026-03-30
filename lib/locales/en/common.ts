@@ -9,5 +9,9 @@ export default {
 		back: "Back",
 		name: "Name",
 		edit: "Edit",
+		program: "Program",
+		session: "Session",
+		exercise: "Exercise",
+		close: "Close",
 	},
 } as const;

@@ -4,7 +4,7 @@ export default {
 		configure: "Configure",
 		search: "Search...",
 		empty: "No exercises yet.",
-		emptyHint: 'Tap "Add" to add one.',
+		emptyHint: 'Tap "Exercise" to add one.',
 		sets: "Sets",
 		reps: "Reps",
 		defaultWeight: "Default weight",
@@ -65,6 +65,12 @@ export default {
 			ab_wheel_rollout: "Ab Wheel Rollout",
 			russian_twist: "Russian Twist",
 			cable_crunch: "Cable Crunch",
+		},
+		exerciseTypes: {
+			all: "All",
+			bodyweight: "Bodyweight",
+			free_weight: "Free weight",
+			machine: "Machine",
 		},
 		muscleGroups: {
 			chest: "Chest",

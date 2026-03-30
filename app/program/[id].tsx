@@ -1,9 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
-import { desc, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { useLiveQuery } from "drizzle-orm/expo-sqlite";
 import { router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
-import { Alert, FlatList, View } from "react-native";
+import { useCallback, useState } from "react";
+import { Alert, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { BottomDrawer } from "../../components/BottomDrawer";
@@ -11,10 +11,13 @@ import { Button } from "../../components/Button";
 import { EmptyState } from "../../components/EmptyState";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { SessionCard } from "../../components/SessionCard";
+import { SortableList } from "../../components/SortableList";
 import { TextField } from "../../components/TextField";
 import { db } from "../../db";
 import { programs, sessionExercises, sessions } from "../../db/schema";
 import { EXERCISES, type MuscleGroup } from "../../lib/exercises";
+
+type SessionRow = typeof sessions.$inferSelect;
 
 export default function ProgramScreen() {
 	const { t } = useTranslation();
@@ -29,12 +32,8 @@ export default function ProgramScreen() {
 	);
 	const program = programData?.[0];
 
-	const { data: sessionData } = useLiveQuery(
-		db
-			.select()
-			.from(sessions)
-			.where(eq(sessions.programId, programId))
-			.orderBy(desc(sessions.createdAt)),
+	const { data: sessionData = [] } = useLiveQuery(
+		db.select().from(sessions).where(eq(sessions.programId, programId)).orderBy(sessions.order),
 	);
 
 	const { data: sessionExRows } = useLiveQuery(
@@ -49,20 +48,33 @@ export default function ProgramScreen() {
 		const name = sessionName.trim();
 		if (!name) return;
 		try {
+			const nextOrder = sessionData.length;
 			const result = await db
 				.insert(sessions)
-				.values({ programId, name })
+				.values({ programId, name, order: nextOrder })
 				.returning({ id: sessions.id });
 			const newId = result[0]?.id;
 			setSessionName("");
 			setDrawerOpen(false);
-			if (newId) router.push(`/programs/session/${newId}`);
+			if (newId) router.push(`/program/session/${newId}`);
 		} catch (e) {
 			console.error("Failed to create session:", e);
 		}
 	}
 
-	function handleDelete(sessionId: number, name: string) {
+	async function handleReorder(newData: SessionRow[]) {
+		try {
+			await Promise.all(
+				newData.map((session, index) =>
+					db.update(sessions).set({ order: index }).where(eq(sessions.id, session.id)),
+				),
+			);
+		} catch (e) {
+			console.error("Failed to reorder sessions:", e);
+		}
+	}
+
+	const handleDelete = useCallback((sessionId: number, name: string) => {
 		Alert.alert(
 			t("sessions.deleteTitle"),
 			t("sessions.deleteMessage", { name }),
@@ -77,21 +89,42 @@ export default function ProgramScreen() {
 				},
 			],
 		);
-	}
+	}, [t]);
+
+	const renderItem = useCallback(
+		({ item, isDragging }: { item: SessionRow; isDragging: boolean }) => {
+			const rows = sessionExRows?.filter((r) => r.sessionId === item.id) ?? [];
+			const muscles = [
+				...new Set(
+					rows.flatMap((r) => EXERCISES.find((e) => e.nameKey === r.exerciseId)?.muscles ?? []),
+				),
+			] as MuscleGroup[];
+
+			return (
+				<SessionCard
+					name={item.name}
+					exerciseCount={rows.length}
+					muscles={muscles}
+					isDragging={isDragging}
+					onPress={() => router.push(`/program/session/${item.id}`)}
+					onDelete={() => handleDelete(item.id, item.name)}
+				/>
+			);
+		},
+		[sessionExRows],
+	);
 
 	if (!program) return null;
-
-	const sessionCount = sessionData?.length ?? 0;
 
 	return (
 		<SafeAreaView className="flex-1 bg-background" edges={["top"]}>
 			<ScreenHeader
 				title={program.name}
-				subtitle={t("programs.sessionCount", { count: sessionCount })}
+				subtitle={t("programs.sessionCount", { count: sessionData.length })}
 				onBack={() => router.back()}
 				action={
 					<Button
-						label={t("common.new")}
+						label={t("common.session")}
 						startIcon={<Ionicons name="add" size={20} color="white" />}
 						onPress={() => setDrawerOpen(true)}
 					/>
@@ -99,34 +132,17 @@ export default function ProgramScreen() {
 			/>
 
 			<View className="flex-1 px-6 pt-2">
-				{sessionCount === 0 ? (
+				{sessionData.length === 0 ? (
 					<EmptyState message={t("sessions.empty")} hint={t("sessions.emptyHint")} />
 				) : (
-					<FlatList
+					<SortableList
 						data={sessionData}
 						keyExtractor={(item) => String(item.id)}
-						contentContainerStyle={{ paddingTop: 8, gap: 12 }}
-						showsVerticalScrollIndicator={false}
-						renderItem={({ item }) => {
-							const rows = sessionExRows?.filter((r) => r.sessionId === item.id) ?? [];
-							const exerciseCount = rows.length;
-							const muscles = [
-								...new Set(
-									rows.flatMap(
-										(r) => EXERCISES.find((e) => e.nameKey === r.exerciseId)?.muscles ?? [],
-									),
-								),
-							] as MuscleGroup[];
-							return (
-								<SessionCard
-									name={item.name}
-									exerciseCount={exerciseCount}
-									muscles={muscles}
-									onPress={() => router.push(`/programs/session/${item.id}`)}
-									onDelete={() => handleDelete(item.id, item.name)}
-								/>
-							);
-						}}
+						renderItem={renderItem}
+						onReorder={handleReorder}
+						estimatedItemHeight={100}
+						itemGap={12}
+						contentContainerStyle={{ paddingTop: 8, paddingBottom: 24 }}
 					/>
 				)}
 			</View>

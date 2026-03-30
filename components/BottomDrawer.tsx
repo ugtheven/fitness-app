@@ -11,6 +11,7 @@ import {
 	View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { palette } from "../lib/palette";
 
 const { height: SCREEN_H } = Dimensions.get("window");
@@ -26,6 +27,7 @@ export type BottomDrawerProps = {
 
 export function BottomDrawer({ visible, onClose, onBack, title, children }: BottomDrawerProps) {
 	const insets = useSafeAreaInsets();
+	const { t } = useTranslation();
 
 	return (
 		<Modal
@@ -40,7 +42,7 @@ export function BottomDrawer({ visible, onClose, onBack, title, children }: Bott
 					style={{ flex: 1 }}
 					onPress={onClose}
 					accessibilityRole="button"
-					accessibilityLabel="Fermer le menu"
+					accessibilityLabel={t("common.close")}
 				/>
 
 				<KeyboardAvoidingView
@@ -64,7 +66,7 @@ export function BottomDrawer({ visible, onClose, onBack, title, children }: Bott
 								className="rounded-full p-2 active:opacity-70"
 								hitSlop={12}
 								accessibilityRole="button"
-								accessibilityLabel={onBack ? "Retour" : "Fermer"}
+								accessibilityLabel={onBack ? t("common.back") : t("common.close")}
 							>
 								<Ionicons
 									name={onBack ? "arrow-back" : "close"}

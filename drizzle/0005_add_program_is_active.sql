@@ -1,0 +1,1 @@
+ALTER TABLE `programs` ADD COLUMN `is_active` integer NOT NULL DEFAULT 0;

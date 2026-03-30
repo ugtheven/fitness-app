@@ -14,7 +14,7 @@ export default function SettingsScreen() {
 	return (
 		<SafeAreaView className="flex-1 bg-background" edges={["top"]}>
 			<View className="flex-1 px-6 pt-2">
-				<Text className="text-4xl font-bold text-foreground">{t("settings.title")}</Text>
+				<Text className="text-2xl font-bold text-foreground">{t("settings.title")}</Text>
 
 				<View className="mt-8 gap-3">
 					<Text className="text-sm font-medium text-muted-foreground uppercase tracking-widest">

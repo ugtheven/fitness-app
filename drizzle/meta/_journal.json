@@ -36,6 +36,27 @@
       "when": 1774777000182,
       "tag": "0004_drop_program_exercises",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1774777000183,
+      "tag": "0005_add_program_is_active",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1774777000184,
+      "tag": "0006_add_session_order",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1774777000185,
+      "tag": "0007_add_exercise_order",
+      "breakpoints": true
     }
   ]
 }

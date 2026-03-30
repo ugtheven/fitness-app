@@ -3,6 +3,7 @@ import { int, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 export const programs = sqliteTable("programs", {
 	id: int("id").primaryKey({ autoIncrement: true }),
 	name: text("name").notNull(),
+	isActive: int("is_active", { mode: "boolean" }).notNull().default(false),
 	createdAt: text("created_at").$defaultFn(() => new Date().toISOString()),
 	updatedAt: text("updated_at").$defaultFn(() => new Date().toISOString()),
 });
@@ -13,6 +14,7 @@ export const sessions = sqliteTable("sessions", {
 		.notNull()
 		.references(() => programs.id, { onDelete: "cascade" }),
 	name: text("name").notNull(),
+	order: int("order").notNull().default(0),
 	createdAt: text("created_at").$defaultFn(() => new Date().toISOString()),
 });
 
@@ -22,6 +24,7 @@ export const sessionExercises = sqliteTable("session_exercises", {
 		.notNull()
 		.references(() => sessions.id, { onDelete: "cascade" }),
 	exerciseId: text("exercise_id").notNull(),
+	order: int("order").notNull().default(0),
 	sets: int("sets").notNull().default(3),
 	reps: int("reps").notNull().default(10),
 	defaultWeight: real("default_weight"),

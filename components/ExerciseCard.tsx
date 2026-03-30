@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { Text, View } from "react-native";
 import type { MuscleGroup } from "../lib/exercises";
@@ -12,6 +13,7 @@ type ExerciseCardProps = {
 	reps: number;
 	defaultWeight: number | null;
 	restTime: number;
+	isDragging?: boolean;
 	onEdit: () => void;
 	onDelete: () => void;
 };
@@ -23,44 +25,47 @@ export function ExerciseCard({
 	reps,
 	defaultWeight,
 	restTime,
+	isDragging,
 	onEdit,
 	onDelete,
 }: ExerciseCardProps) {
 	const { t } = useTranslation();
 
 	return (
-		<View className="rounded-2xl bg-card px-5 py-4">
-			<View className="flex-row items-start">
-				<View className="flex-1">
-					<Text className="text-base font-semibold text-foreground">{name}</Text>
-					<Text className="mt-0.5 text-xs text-muted-foreground">
-						{sets} sets · {reps} reps
-						{defaultWeight ? ` · ${defaultWeight} kg` : ""}
-						{` · ${restTime}s rest`}
-					</Text>
-				</View>
-				<View className="flex-row">
-					<IconButton
-						name="create-outline"
-						size={18}
-						color={palette.muted.foreground}
-						onPress={onEdit}
-						accessibilityLabel={t("common.edit")}
-					/>
-					<IconButton
-						name="trash-outline"
-						size={18}
-						color={palette.muted.foreground}
-						onPress={onDelete}
-						accessibilityLabel={t("common.delete")}
-					/>
+		<View
+			className="flex-row items-center gap-3 rounded-2xl bg-card px-5 py-4"
+			style={isDragging ? { shadowColor: "#000", shadowOpacity: 0.2, shadowRadius: 10, elevation: 10 } : undefined}
+		>
+			<Ionicons name="reorder-three-outline" size={22} color={palette.muted.foreground} />
+			<View className="flex-1">
+				<Text className="text-base font-semibold text-foreground">{name}</Text>
+				<Text className="mt-0.5 text-xs text-muted-foreground">
+					{sets} sets · {reps} reps
+					{defaultWeight ? ` · ${defaultWeight} kg` : ""}
+					{` · ${restTime}s rest`}
+				</Text>
+				<View className="mt-2" style={{ minHeight: 26 }}>
+					{muscles.length > 0 && (
+						<ChipList labels={muscles.map((m) => t(`exercises.muscleGroups.${m}`))} />
+					)}
 				</View>
 			</View>
-			{muscles.length > 0 && (
-				<View className="mt-2">
-					<ChipList labels={muscles.map((m) => t(`exercises.muscleGroups.${m}`))} />
-				</View>
-			)}
+			<View className="flex-row items-center">
+				<IconButton
+					name="create-outline"
+					size={18}
+					color={palette.muted.foreground}
+					onPress={onEdit}
+					accessibilityLabel={t("common.edit")}
+				/>
+				<IconButton
+					name="trash-outline"
+					size={18}
+					color="#ef4444"
+					onPress={onDelete}
+					accessibilityLabel={t("common.delete")}
+				/>
+			</View>
 		</View>
 	);
 }

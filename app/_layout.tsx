@@ -3,6 +3,7 @@ import { useMigrations } from "drizzle-orm/expo-sqlite/migrator";
 import { Stack } from "expo-router";
 import { useEffect, useState } from "react";
 import { Text, View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import migrations from "../drizzle/migrations";
 import { db } from "../db";
 import { palette } from "../lib/palette";
@@ -33,11 +34,13 @@ export default function RootLayout() {
 	}
 
 	return (
-		<Stack
-			screenOptions={{
-				headerShown: false,
-				contentStyle: { backgroundColor: palette.background },
-			}}
-		/>
+		<GestureHandlerRootView style={{ flex: 1 }}>
+			<Stack
+				screenOptions={{
+					headerShown: false,
+					contentStyle: { backgroundColor: palette.background },
+				}}
+			/>
+		</GestureHandlerRootView>
 	);
 }

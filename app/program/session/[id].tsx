@@ -2,8 +2,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { eq } from "drizzle-orm";
 import { useLiveQuery } from "drizzle-orm/expo-sqlite";
 import { router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
-import { Alert, FlatList, Pressable, ScrollView, Text, View } from "react-native";
+import { useCallback, useState } from "react";
+import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { BottomDrawer } from "../../../components/BottomDrawer";
@@ -14,10 +14,19 @@ import { EmptyState } from "../../../components/EmptyState";
 import { ExerciseCard } from "../../../components/ExerciseCard";
 import { NumberField } from "../../../components/NumberField";
 import { ScreenHeader } from "../../../components/ScreenHeader";
+import { SortableList } from "../../../components/SortableList";
 import { db } from "../../../db";
 import { sessionExercises, sessions } from "../../../db/schema";
-import { EXERCISES, type Exercise, type MuscleGroup } from "../../../lib/exercises";
+import { EXERCISES, type Exercise, type ExerciseType, type MuscleGroup } from "../../../lib/exercises";
 import { palette } from "../../../lib/palette";
+
+type ExerciseRow = typeof sessionExercises.$inferSelect;
+
+const TYPE_ICONS: Record<ExerciseType, React.ComponentProps<typeof Ionicons>["name"]> = {
+	bodyweight: "body-outline",
+	free_weight: "barbell-outline",
+	machine: "cog-outline",
+};
 
 export default function SessionScreen() {
 	const { t } = useTranslation();
@@ -33,14 +42,15 @@ export default function SessionScreen() {
 	const [weight, setWeight] = useState(0);
 	const [restTime, setRestTime] = useState(90);
 	const [search, setSearch] = useState("");
+	const [typeFilter, setTypeFilter] = useState<ExerciseType | null>(null);
 
 	const { data: sessionData } = useLiveQuery(
 		db.select().from(sessions).where(eq(sessions.id, sessionId)),
 	);
 	const session = sessionData?.[0];
 
-	const { data: exerciseRows } = useLiveQuery(
-		db.select().from(sessionExercises).where(eq(sessionExercises.sessionId, sessionId)),
+	const { data: exerciseRows = [] } = useLiveQuery(
+		db.select().from(sessionExercises).where(eq(sessionExercises.sessionId, sessionId)).orderBy(sessionExercises.order),
 	);
 
 	function openDrawer() {
@@ -52,10 +62,11 @@ export default function SessionScreen() {
 		setWeight(0);
 		setRestTime(90);
 		setSearch("");
+		setTypeFilter(null);
 		setDrawerOpen(true);
 	}
 
-	function openEditDrawer(item: typeof sessionExercises.$inferSelect) {
+	const openEditDrawer = useCallback((item: ExerciseRow) => {
 		const exercise = EXERCISES.find((e) => e.nameKey === item.exerciseId) ?? null;
 		setEditingId(item.id);
 		setSelected(exercise);
@@ -65,9 +76,9 @@ export default function SessionScreen() {
 		setRestTime(item.restTime);
 		setStep(2);
 		setDrawerOpen(true);
-	}
+	}, []);
 
-	function confirmDelete(itemId: number) {
+	const confirmDelete = useCallback((itemId: number) => {
 		Alert.alert(
 			t("exercises.deleteTitle"),
 			t("exercises.deleteMessage"),
@@ -82,7 +93,7 @@ export default function SessionScreen() {
 				},
 			],
 		);
-	}
+	}, [t]);
 
 	function pickExercise(exercise: Exercise) {
 		setSelected(exercise);
@@ -92,9 +103,11 @@ export default function SessionScreen() {
 	async function handleAdd() {
 		if (!selected) return;
 		try {
+			const nextOrder = exerciseRows.length;
 			await db.insert(sessionExercises).values({
 				sessionId,
 				exerciseId: selected.nameKey,
+				order: nextOrder,
 				sets,
 				reps,
 				defaultWeight: weight > 0 ? weight : null,
@@ -119,13 +132,50 @@ export default function SessionScreen() {
 		}
 	}
 
+	async function handleReorder(newData: ExerciseRow[]) {
+		try {
+			await Promise.all(
+				newData.map((row, index) =>
+					db.update(sessionExercises).set({ order: index }).where(eq(sessionExercises.id, row.id)),
+				),
+			);
+		} catch (e) {
+			console.error("Failed to reorder exercises:", e);
+		}
+	}
+
+	const renderItem = useCallback(
+		({ item, isDragging }: { item: ExerciseRow; isDragging: boolean }) => {
+			const exercise = EXERCISES.find((e) => e.nameKey === item.exerciseId);
+			const name = exercise ? t(`exercises.names.${exercise.nameKey}`) : item.exerciseId;
+			return (
+				<ExerciseCard
+					name={name}
+					muscles={exercise?.muscles ?? []}
+					sets={item.sets}
+					reps={item.reps}
+					defaultWeight={item.defaultWeight ?? null}
+					restTime={item.restTime}
+					isDragging={isDragging}
+					onEdit={() => openEditDrawer(item)}
+					onDelete={() => confirmDelete(item.id)}
+				/>
+			);
+		},
+		[t, openEditDrawer, confirmDelete],
+	);
+
 	if (!session) return null;
 
-	const count = exerciseRows?.length ?? 0;
+	const count = exerciseRows.length;
 
-	const filteredExercises = EXERCISES.filter((e) =>
-		t(`exercises.names.${e.nameKey}`).toLowerCase().includes(search.toLowerCase()),
-	);
+	const filteredExercises = EXERCISES.filter((e) => {
+		const matchesSearch = t(`exercises.names.${e.nameKey}`).toLowerCase().includes(search.toLowerCase());
+		const matchesType = typeFilter === null || e.type === typeFilter;
+		return matchesSearch && matchesType;
+	});
+
+	const ALL_TYPES: ExerciseType[] = ["bodyweight", "free_weight", "machine"];
 
 	return (
 		<SafeAreaView className="flex-1 bg-background" edges={["top"]}>
@@ -135,7 +185,7 @@ export default function SessionScreen() {
 				onBack={() => router.back()}
 				action={
 					<Button
-						label={t("common.add")}
+						label={t("common.exercise")}
 						startIcon={<Ionicons name="add" size={20} color="white" />}
 						onPress={openDrawer}
 					/>
@@ -146,29 +196,14 @@ export default function SessionScreen() {
 				{count === 0 ? (
 					<EmptyState message={t("exercises.empty")} hint={t("exercises.emptyHint")} />
 				) : (
-					<FlatList
+					<SortableList
 						data={exerciseRows}
 						keyExtractor={(item) => String(item.id)}
-						contentContainerStyle={{ paddingTop: 8, gap: 12 }}
-						showsVerticalScrollIndicator={false}
-						renderItem={({ item }) => {
-							const exercise = EXERCISES.find((e) => e.nameKey === item.exerciseId);
-							const name = exercise
-								? t(`exercises.names.${exercise.nameKey}`)
-								: item.exerciseId;
-							return (
-								<ExerciseCard
-									name={name}
-									muscles={exercise?.muscles ?? []}
-									sets={item.sets}
-									reps={item.reps}
-									defaultWeight={item.defaultWeight ?? null}
-									restTime={item.restTime}
-									onEdit={() => openEditDrawer(item)}
-									onDelete={() => confirmDelete(item.id)}
-								/>
-							);
-						}}
+						renderItem={renderItem}
+						onReorder={handleReorder}
+						estimatedItemHeight={100}
+						itemGap={12}
+						contentContainerStyle={{ paddingTop: 8, paddingBottom: 24 }}
 					/>
 				)}
 			</View>
@@ -186,10 +221,59 @@ export default function SessionScreen() {
 				{step === 1 ? (
 					<View className="gap-3">
 						<SearchField
-						value={search}
-						onChangeText={setSearch}
-						placeholder={t("exercises.search")}
-					/>
+							value={search}
+							onChangeText={setSearch}
+							placeholder={t("exercises.search")}
+						/>
+
+						{/* Type filters */}
+						<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+							<Pressable
+								onPress={() => setTypeFilter(null)}
+								className="active:opacity-70"
+							>
+								<View
+									className="flex-row items-center gap-1.5 rounded-full px-3 py-1.5"
+									style={{
+										backgroundColor: typeFilter === null ? palette.primary.DEFAULT : palette.muted.DEFAULT,
+									}}
+								>
+									<Text
+										className="text-xs font-semibold"
+										style={{ color: typeFilter === null ? palette.primary.foreground : palette.muted.foreground }}
+									>
+										{t("exercises.exerciseTypes.all")}
+									</Text>
+								</View>
+							</Pressable>
+							{ALL_TYPES.map((type) => (
+								<Pressable
+									key={type}
+									onPress={() => setTypeFilter(typeFilter === type ? null : type)}
+									className="active:opacity-70"
+								>
+									<View
+										className="flex-row items-center gap-1.5 rounded-full px-3 py-1.5"
+										style={{
+											backgroundColor: typeFilter === type ? palette.primary.DEFAULT : palette.muted.DEFAULT,
+										}}
+									>
+										<Ionicons
+											name={TYPE_ICONS[type]}
+											size={13}
+											color={typeFilter === type ? palette.primary.foreground : palette.muted.foreground}
+										/>
+										<Text
+											className="text-xs font-semibold"
+											style={{ color: typeFilter === type ? palette.primary.foreground : palette.muted.foreground }}
+										>
+											{t(`exercises.exerciseTypes.${type}`)}
+										</Text>
+									</View>
+								</Pressable>
+							))}
+						</ScrollView>
+
 						<ScrollView showsVerticalScrollIndicator={false}>
 							<View className="gap-2">
 								{filteredExercises.map((exercise) => (
@@ -200,9 +284,15 @@ export default function SessionScreen() {
 									>
 										<View className="flex-row items-center rounded-xl bg-background px-4 py-3">
 											<View className="flex-1 gap-1.5">
-												<Text className="text-base font-medium text-foreground">
-													{t(`exercises.names.${exercise.nameKey}`)}
-												</Text>
+												<View className="flex-row items-center gap-2">
+													<Text className="text-base font-medium text-foreground">
+														{t(`exercises.names.${exercise.nameKey}`)}
+													</Text>
+													<View className="flex-row items-center gap-1 rounded-full bg-muted px-2 py-0.5">
+														<Ionicons name={TYPE_ICONS[exercise.type]} size={11} color={palette.muted.foreground} />
+														<Text className="text-xs text-muted-foreground">{t(`exercises.exerciseTypes.${exercise.type}`)}</Text>
+													</View>
+												</View>
 												<View className="flex-row flex-wrap gap-1">
 													{exercise.muscles.map((m) => (
 														<Chip key={m} label={t(`exercises.muscleGroups.${m}`)} />
@@ -220,9 +310,15 @@ export default function SessionScreen() {
 					<View className="gap-4">
 						{selected && (
 							<View className="rounded-2xl bg-background px-5 py-4">
-								<Text className="text-base font-semibold text-foreground">
-									{t(`exercises.names.${selected.nameKey}`)}
-								</Text>
+								<View className="flex-row items-center gap-2">
+									<Text className="text-base font-semibold text-foreground">
+										{t(`exercises.names.${selected.nameKey}`)}
+									</Text>
+									<View className="flex-row items-center gap-1 rounded-full bg-muted px-2 py-0.5">
+										<Ionicons name={TYPE_ICONS[selected.type]} size={11} color={palette.muted.foreground} />
+										<Text className="text-xs text-muted-foreground">{t(`exercises.exerciseTypes.${selected.type}`)}</Text>
+									</View>
+								</View>
 								<View className="mt-2 flex-row flex-wrap gap-1">
 									{selected.muscles.map((m) => (
 										<Chip key={m} label={t(`exercises.muscleGroups.${m}`)} />

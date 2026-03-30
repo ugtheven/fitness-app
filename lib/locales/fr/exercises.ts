@@ -4,7 +4,7 @@ export default {
 		configure: "Configurer",
 		search: "Rechercher...",
 		empty: "Aucun exercice.",
-		emptyHint: 'Appuyez sur "Ajouter" pour en ajouter un.',
+		emptyHint: 'Appuyez sur "Exercice" pour en ajouter un.',
 		sets: "Séries",
 		reps: "Reps",
 		defaultWeight: "Poids par défaut",
@@ -65,6 +65,12 @@ export default {
 			ab_wheel_rollout: "Roue abdominale",
 			russian_twist: "Rotation russe",
 			cable_crunch: "Crunch poulie",
+		},
+		exerciseTypes: {
+			all: "Tous",
+			bodyweight: "Poids du corps",
+			free_weight: "Poids libre",
+			machine: "Machine",
 		},
 		muscleGroups: {
 			chest: "Pectoraux",
