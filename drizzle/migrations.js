@@ -9,6 +9,8 @@ import m0004 from './0004_drop_program_exercises.sql';
 import m0005 from './0005_add_program_is_active.sql';
 import m0006 from './0006_add_session_order.sql';
 import m0007 from './0007_add_exercise_order.sql';
+import m0008 from './0008_add_workout_tables.sql';
+import m0009 from './0009_improve_workout_schema.sql';
 
   export default {
     journal,
@@ -20,6 +22,8 @@ import m0007 from './0007_add_exercise_order.sql';
       m0004,
       m0005,
       m0006,
-      m0007
+      m0007,
+      m0008,
+      m0009
     }
   }

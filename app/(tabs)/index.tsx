@@ -1,28 +1,90 @@
 import { Ionicons } from "@expo/vector-icons";
 import { eq, sql } from "drizzle-orm";
 import { useLiveQuery } from "drizzle-orm/expo-sqlite";
+import { useRouter } from "expo-router";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { BottomDrawer } from "../../components/BottomDrawer";
 import { db } from "../../db";
-import { programs, sessions } from "../../db/schema";
+import {
+	programs,
+	sessionExercises,
+	sessions,
+	workoutExercises,
+	workoutSessions,
+} from "../../db/schema";
 import { palette } from "../../lib/palette";
 
 export default function HomeScreen() {
 	const { t } = useTranslation();
+	const router = useRouter();
+	const [drawerVisible, setDrawerVisible] = useState(false);
+	const [launchingSessionId, setLaunchingSessionId] = useState<number | null>(null);
 
 	const { data: activePrograms } = useLiveQuery(
 		db.select().from(programs).where(eq(programs.isActive, true)).limit(1)
 	);
 	const activeProgram = activePrograms?.[0];
 
-	const { data: sessionRows } = useLiveQuery(
+	const { data: programSessions } = useLiveQuery(
 		db
-			.select({ count: sql<number>`count(*)` })
+			.select({
+				sessions,
+				exerciseCount: sql<number>`count(${sessionExercises.id})`,
+			})
 			.from(sessions)
-			.where(activeProgram ? eq(sessions.programId, activeProgram.id) : sql`0`)
+			.innerJoin(programs, eq(sessions.programId, programs.id))
+			.leftJoin(sessionExercises, eq(sessionExercises.sessionId, sessions.id))
+			.where(eq(programs.isActive, true))
+			.groupBy(sessions.id)
+			.orderBy(sessions.order)
 	);
-	const sessionCount = sessionRows?.[0]?.count ?? 0;
+
+	const sessionCount = programSessions?.length ?? 0;
+
+	async function handleSessionSelect(sessionId: number) {
+		if (launchingSessionId !== null) return;
+		setLaunchingSessionId(sessionId);
+
+		const exercises = await db
+			.select()
+			.from(sessionExercises)
+			.where(eq(sessionExercises.sessionId, sessionId))
+			.orderBy(sessionExercises.order);
+
+		if (exercises.length === 0) {
+			setLaunchingSessionId(null);
+			return;
+		}
+
+		const now = new Date().toISOString();
+
+		const workoutSessionId = await db.transaction(async (tx) => {
+			const [workoutSession] = await tx
+				.insert(workoutSessions)
+				.values({ sessionId, startedAt: now, status: "in_progress" })
+				.returning();
+
+			await tx.insert(workoutExercises).values(
+				exercises.map((ex) => ({
+					workoutSessionId: workoutSession.id,
+					sessionExerciseId: ex.id,
+					exerciseId: ex.exerciseId,
+					prescribedSets: ex.sets,
+					prescribedReps: ex.reps,
+					status: "pending" as const,
+				}))
+			);
+
+			return workoutSession.id;
+		});
+
+		setDrawerVisible(false);
+		setLaunchingSessionId(null);
+		router.push(`/workout/${workoutSessionId}`);
+	}
 
 	return (
 		<SafeAreaView className="flex-1 bg-background" edges={["top"]}>
@@ -32,7 +94,7 @@ export default function HomeScreen() {
 
 			{activeProgram && (
 				<Pressable
-					onPress={() => {}}
+					onPress={() => setDrawerVisible(true)}
 					className="active:opacity-80"
 					style={{ paddingHorizontal: 16, paddingBottom: 12 }}
 				>
@@ -63,6 +125,42 @@ export default function HomeScreen() {
 					</View>
 				</Pressable>
 			)}
+
+			<BottomDrawer
+				visible={drawerVisible}
+				onClose={() => setDrawerVisible(false)}
+				title={t("sessions.chooseSession")}
+			>
+				<View className="gap-3">
+					{programSessions?.map(({ sessions: session, exerciseCount }) => (
+						<Pressable
+							key={session.id}
+							onPress={() => handleSessionSelect(session.id)}
+							disabled={launchingSessionId !== null}
+							className="active:opacity-70"
+						>
+							<View
+								className="flex-row items-center gap-3 rounded-2xl px-4 py-4"
+								style={{ backgroundColor: palette.muted.DEFAULT }}
+							>
+								<View className="flex-1">
+									<Text className="text-base font-semibold text-foreground">
+										{session.name}
+									</Text>
+									<Text className="text-xs mt-0.5" style={{ color: palette.muted.foreground }}>
+										{t("sessions.exerciseCount", { count: exerciseCount })}
+									</Text>
+								</View>
+								{launchingSessionId === session.id ? (
+									<ActivityIndicator size="small" color={palette.primary.DEFAULT} />
+								) : (
+									<Ionicons name="chevron-forward" size={18} color={palette.muted.foreground} />
+								)}
+							</View>
+						</Pressable>
+					))}
+				</View>
+			</BottomDrawer>
 		</SafeAreaView>
 	);
 }

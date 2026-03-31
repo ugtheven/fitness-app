@@ -13,5 +13,6 @@ export default {
 		session: "Séance",
 		exercise: "Exercice",
 		close: "Fermer",
+		skip: "Passer",
 	},
 } as const;

@@ -57,6 +57,20 @@
       "when": 1774777000185,
       "tag": "0007_add_exercise_order",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1774777000186,
+      "tag": "0008_add_workout_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1774777000187,
+      "tag": "0009_improve_workout_schema",
+      "breakpoints": true
     }
   ]
 }
