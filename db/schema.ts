@@ -5,7 +5,9 @@ export const programs = sqliteTable("programs", {
 	name: text("name").notNull(),
 	isActive: int("is_active", { mode: "boolean" }).notNull().default(false),
 	createdAt: text("created_at").$defaultFn(() => new Date().toISOString()),
-	updatedAt: text("updated_at").$defaultFn(() => new Date().toISOString()),
+	updatedAt: text("updated_at")
+		.$defaultFn(() => new Date().toISOString())
+		.$onUpdateFn(() => new Date().toISOString()),
 });
 
 export const sessions = sqliteTable("sessions", {
@@ -23,7 +25,8 @@ export const sessionExercises = sqliteTable("session_exercises", {
 	sessionId: int("session_id")
 		.notNull()
 		.references(() => sessions.id, { onDelete: "cascade" }),
-	exerciseId: text("exercise_id").notNull(),
+	exerciseVariantId: text("exercise_variant_id").notNull(),
+	isUnilateral: int("is_unilateral", { mode: "boolean" }).notNull().default(false),
 	order: int("order").notNull().default(0),
 	sets: int("sets").notNull().default(3),
 	reps: int("reps").notNull().default(10),
@@ -35,6 +38,8 @@ export const workoutSessions = sqliteTable("workout_sessions", {
 	id: int("id").primaryKey({ autoIncrement: true }),
 	// Nullable: set null si la session de programme est supprimée (historique conservé)
 	sessionId: int("session_id").references(() => sessions.id, { onDelete: "set null" }),
+	// Snapshot: set null si le programme est supprimé, mais l'historique reste consultable par programme
+	programId: int("program_id").references(() => programs.id, { onDelete: "set null" }),
 	startedAt: text("started_at").notNull(),
 	endedAt: text("ended_at"),
 	status: text("status", { enum: ["in_progress", "completed"] })
@@ -54,10 +59,12 @@ export const workoutExercises = sqliteTable(
 			onDelete: "set null",
 		}),
 		// Dénormalisé: permet de requêter l'historique par exercice sans JOIN
-		exerciseId: text("exercise_id").notNull(),
+		exerciseVariantId: text("exercise_variant_id").notNull(),
+		isUnilateral: int("is_unilateral", { mode: "boolean" }).notNull().default(false),
 		// Snapshot au moment de la séance: les stats restent cohérentes même si le programme change
 		prescribedSets: int("prescribed_sets").notNull(),
 		prescribedReps: int("prescribed_reps").notNull(),
+		prescribedWeight: real("prescribed_weight"),
 		status: text("status", { enum: ["pending", "completed", "skipped"] })
 			.notNull()
 			.default("pending"),
@@ -72,7 +79,9 @@ export const workoutSets = sqliteTable(
 			.notNull()
 			.references(() => workoutExercises.id, { onDelete: "cascade" }),
 		setIndex: int("set_index").notNull(),
-		reps: int("reps").notNull(),
+		reps: int("reps"),
+		repsLeft: int("reps_left"),
+		repsRight: int("reps_right"),
 		weight: real("weight"),
 		completedAt: text("completed_at").notNull(),
 	},

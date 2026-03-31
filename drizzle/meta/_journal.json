@@ -6,70 +6,7 @@
       "idx": 0,
       "version": "6",
       "when": 1774777000178,
-      "tag": "0000_supreme_harpoon",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1774777000179,
-      "tag": "0001_add_sessions",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1774777000180,
-      "tag": "0002_add_session_exercises",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1774777000181,
-      "tag": "0003_exercise_id_text",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "6",
-      "when": 1774777000182,
-      "tag": "0004_drop_program_exercises",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "6",
-      "when": 1774777000183,
-      "tag": "0005_add_program_is_active",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "6",
-      "when": 1774777000184,
-      "tag": "0006_add_session_order",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "6",
-      "when": 1774777000185,
-      "tag": "0007_add_exercise_order",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "6",
-      "when": 1774777000186,
-      "tag": "0008_add_workout_tables",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "6",
-      "when": 1774777000187,
-      "tag": "0009_improve_workout_schema",
+      "tag": "0000_full_schema",
       "breakpoints": true
     }
   ]

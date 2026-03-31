@@ -1,5 +1,5 @@
 import { forwardRef, type ComponentRef, type ReactNode, useRef } from "react";
-import { Animated, Pressable, Text } from "react-native";
+import { ActivityIndicator, Animated, Pressable, Text } from "react-native";
 import type { GestureResponderEvent, PressableProps } from "react-native";
 import { palette } from "../lib/palette";
 
@@ -8,6 +8,7 @@ export type ButtonProps = Omit<PressableProps, "children"> & {
 	startIcon?: ReactNode;
 	/** Étire le bouton sur toute la largeur du parent (ex. drawer, formulaire). */
 	fullWidth?: boolean;
+	loading?: boolean;
 };
 
 export const Button = forwardRef<ComponentRef<typeof Pressable>, ButtonProps>(function Button(
@@ -16,6 +17,7 @@ export const Button = forwardRef<ComponentRef<typeof Pressable>, ButtonProps>(fu
 		startIcon,
 		fullWidth,
 		disabled,
+		loading,
 		className,
 		accessibilityLabel,
 		onPressIn,
@@ -36,7 +38,7 @@ export const Button = forwardRef<ComponentRef<typeof Pressable>, ButtonProps>(fu
 	};
 
 	const handlePressIn = (e: GestureResponderEvent) => {
-		if (!disabled) animateTo(0.96);
+		if (!disabled && !loading) animateTo(0.96);
 		onPressIn?.(e);
 	};
 
@@ -45,14 +47,16 @@ export const Button = forwardRef<ComponentRef<typeof Pressable>, ButtonProps>(fu
 		onPressOut?.(e);
 	};
 
+	const isDisabled = disabled || loading;
+
 	return (
 		<Pressable
 			ref={ref}
-			disabled={disabled}
+			disabled={isDisabled}
 			accessibilityRole="button"
 			accessibilityLabel={accessibilityLabel ?? label}
-			accessibilityState={{ disabled: !!disabled }}
-			className={`${fullWidth ? "w-full self-stretch" : "shrink-0 self-start"} ${disabled ? "opacity-50" : ""} ${className ?? ""}`}
+			accessibilityState={{ disabled: !!isDisabled }}
+			className={`${fullWidth ? "w-full self-stretch" : "shrink-0 self-start"} ${isDisabled ? "opacity-50" : ""} ${className ?? ""}`}
 			onPressIn={handlePressIn}
 			onPressOut={handlePressOut}
 			{...pressableProps}
@@ -74,8 +78,14 @@ export const Button = forwardRef<ComponentRef<typeof Pressable>, ButtonProps>(fu
 					{ transform: [{ scale }] },
 				]}
 			>
-				{startIcon}
-				<Text className="text-lg font-bold text-white">{label}</Text>
+				{loading ? (
+					<ActivityIndicator size="small" color="#fff" />
+				) : (
+					<>
+						{startIcon}
+						<Text className="text-lg font-bold text-white">{label}</Text>
+					</>
+				)}
 			</Animated.View>
 		</Pressable>
 	);

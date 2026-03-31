@@ -2,24 +2,27 @@ import { Ionicons } from "@expo/vector-icons";
 import { eq } from "drizzle-orm";
 import { useLiveQuery } from "drizzle-orm/expo-sqlite";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { db } from "../../db";
 import { programs, sessionExercises, sessions, workoutExercises, workoutSessions } from "../../db/schema";
-import { EXERCISES, type ExerciseType } from "../../lib/exercises";
+import { EXERCISE_VARIANTS_BY_ID } from "../../lib/exerciseVariants";
+import type { Equipment } from "../../lib/exerciseTypes";
 import { useSessionTimer } from "../../lib/useSessionTimer";
 import { palette } from "../../lib/palette";
 
-function typeIcon(type: ExerciseType): keyof typeof Ionicons.glyphMap {
-	switch (type) {
+function equipmentIcon(equipment: Equipment): keyof typeof Ionicons.glyphMap {
+	switch (equipment) {
 		case "bodyweight":
 			return "person-outline";
-		case "free_weight":
+		case "dumbbell":
+		case "barbell":
 			return "barbell-outline";
 		case "machine":
+		case "cable":
 			return "hardware-chip-outline";
 	}
 }
@@ -59,6 +62,10 @@ export default function WorkoutScreen() {
 			.orderBy(workoutExercises.id)
 	);
 
+	const scrollViewRef = useRef<ScrollView>(null);
+	const itemLayoutsRef = useRef<Record<number, number>>({});
+	const hasScrolledRef = useRef(false);
+
 	// Auto-finalize when all exercises are completed
 	useEffect(() => {
 		if (!workoutSession || workoutSession.status === "completed") return;
@@ -77,15 +84,24 @@ export default function WorkoutScreen() {
 	}, [exerciseRows, workoutSession, workoutSessionId]);
 
 
-	const timerLabel = useSessionTimer(workoutSession?.startedAt, workoutSession?.status);
-
-	if (!workoutSession) return null;
-
 	const doneCount = exerciseRows.filter(({ workoutExercise }) => workoutExercise.status === "completed").length;
 	const totalCount = exerciseRows.length;
 	const currentExerciseId = exerciseRows.find(
 		({ workoutExercise }) => workoutExercise.status !== "completed"
 	)?.workoutExercise.id;
+
+	// Scroll to current exercise once on initial load
+	useEffect(() => {
+		if (hasScrolledRef.current || currentExerciseId == null) return;
+		const y = itemLayoutsRef.current[currentExerciseId];
+		if (y == null) return;
+		hasScrolledRef.current = true;
+		scrollViewRef.current?.scrollTo({ y: Math.max(0, y - 16), animated: true });
+	});
+
+	const timerLabel = useSessionTimer(workoutSession?.startedAt, workoutSession?.status);
+
+	if (!workoutSession) return null;
 
 	return (
 		<SafeAreaView className="flex-1 bg-background" edges={["top"]}>
@@ -109,8 +125,9 @@ export default function WorkoutScreen() {
 				}
 			/>
 
-	
+
 			<ScrollView
+				ref={scrollViewRef}
 				className="flex-1 px-6"
 				contentContainerStyle={{ gap: 10, paddingTop: 4, paddingBottom: 24 }}
 			>
@@ -119,17 +136,17 @@ export default function WorkoutScreen() {
 				</Text>
 
 				{exerciseRows.map(({ workoutExercise }) => {
-					const exerciseId = workoutExercise.exerciseId;
-					const exercise = EXERCISES.find((e) => e.nameKey === exerciseId);
-					const name = exercise ? t(`exercises.names.${exercise.nameKey}`) : exerciseId;
+					const variant = EXERCISE_VARIANTS_BY_ID[workoutExercise.exerciseVariantId];
+					const name = variant ? t(`exercises.names.${variant.id}`) : workoutExercise.exerciseVariantId;
 					const isDone = workoutExercise.status === "completed";
 					const isCurrent = workoutExercise.id === currentExerciseId;
-					const icon = exercise ? typeIcon(exercise.type) : "barbell-outline";
+					const icon = variant ? equipmentIcon(variant.equipment) : "barbell-outline";
 
 					return (
 						<Pressable
 							key={workoutExercise.id}
 							onPress={() => router.push(`/workout/exercise/${workoutExercise.id}`)}
+							onLayout={(e) => { itemLayoutsRef.current[workoutExercise.id] = e.nativeEvent.layout.y; }}
 							className="active:opacity-70"
 							disabled={isDone}
 						>

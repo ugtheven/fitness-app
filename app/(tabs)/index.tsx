@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { useLiveQuery } from "drizzle-orm/expo-sqlite";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -47,43 +47,50 @@ export default function HomeScreen() {
 	async function handleSessionSelect(sessionId: number) {
 		if (launchingSessionId !== null) return;
 		setLaunchingSessionId(sessionId);
+		try {
+			const workoutSessionId = await db.transaction(async (tx) => {
+				// Delete any interrupted session for this template (not resumed — always start fresh)
+				await tx.delete(workoutSessions)
+					.where(and(eq(workoutSessions.sessionId, sessionId), eq(workoutSessions.status, "in_progress")));
 
-		const exercises = await db
-			.select()
-			.from(sessionExercises)
-			.where(eq(sessionExercises.sessionId, sessionId))
-			.orderBy(sessionExercises.order);
+				// Read exercises inside the transaction for atomicity
+				const exercises = await tx
+					.select()
+					.from(sessionExercises)
+					.where(eq(sessionExercises.sessionId, sessionId))
+					.orderBy(sessionExercises.order);
 
-		if (exercises.length === 0) {
+				if (exercises.length === 0) return null;
+
+				const now = new Date().toISOString();
+				const [workoutSession] = await tx
+					.insert(workoutSessions)
+					.values({ sessionId, programId: activeProgram?.id ?? null, startedAt: now, status: "in_progress" })
+					.returning();
+
+				await tx.insert(workoutExercises).values(
+					exercises.map((ex) => ({
+						workoutSessionId: workoutSession.id,
+						sessionExerciseId: ex.id,
+						exerciseVariantId: ex.exerciseVariantId,
+						isUnilateral: ex.isUnilateral,
+						prescribedSets: ex.sets,
+						prescribedReps: ex.reps,
+						prescribedWeight: ex.defaultWeight ?? null,
+						status: "pending" as const,
+					}))
+				);
+
+				return workoutSession.id;
+			});
+
+			if (workoutSessionId == null) return;
+
+			setDrawerVisible(false);
+			router.push(`/workout/${workoutSessionId}`);
+		} finally {
 			setLaunchingSessionId(null);
-			return;
 		}
-
-		const now = new Date().toISOString();
-
-		const workoutSessionId = await db.transaction(async (tx) => {
-			const [workoutSession] = await tx
-				.insert(workoutSessions)
-				.values({ sessionId, startedAt: now, status: "in_progress" })
-				.returning();
-
-			await tx.insert(workoutExercises).values(
-				exercises.map((ex) => ({
-					workoutSessionId: workoutSession.id,
-					sessionExerciseId: ex.id,
-					exerciseId: ex.exerciseId,
-					prescribedSets: ex.sets,
-					prescribedReps: ex.reps,
-					status: "pending" as const,
-				}))
-			);
-
-			return workoutSession.id;
-		});
-
-		setDrawerVisible(false);
-		setLaunchingSessionId(null);
-		router.push(`/workout/${workoutSessionId}`);
 	}
 
 	return (

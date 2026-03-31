@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import { and, eq, ne, sql } from "drizzle-orm";
@@ -13,7 +14,7 @@ import { Button } from "../../../components/Button";
 import { ScreenHeader } from "../../../components/ScreenHeader";
 import { db } from "../../../db";
 import { sessionExercises, sessions, workoutExercises, workoutSessions, workoutSets } from "../../../db/schema";
-import { EXERCISES } from "../../../lib/exercises";
+import { EXERCISE_VARIANTS_BY_ID } from "../../../lib/exerciseVariants";
 import { useSessionTimer } from "../../../lib/useSessionTimer";
 import { palette } from "../../../lib/palette";
 
@@ -24,6 +25,9 @@ export default function ExerciseScreen() {
 	const router = useRouter();
 
 	const [reps, setReps] = useState(10);
+	const [repsLeft, setRepsLeft] = useState(10);
+	const [repsRight, setRepsRight] = useState(10);
+	const [unilateralSide, setUnilateralSide] = useState<"left" | "right">("left");
 	const [weight, setWeight] = useState(0);
 	const [showWeightInput, setShowWeightInput] = useState(false);
 	const [isSaving, setIsSaving] = useState(false);
@@ -63,9 +67,14 @@ export default function ExerciseScreen() {
 	useEffect(() => {
 		if (!exerciseRow || hasInitializedRef.current) return;
 		hasInitializedRef.current = true;
-		setReps(exerciseRow.sessionExercise?.reps ?? exerciseRow.workoutExercise.prescribedReps);
+		const initReps = exerciseRow.sessionExercise?.reps ?? exerciseRow.workoutExercise.prescribedReps;
+		setReps(initReps);
+		setRepsLeft(initReps);
+		setRepsRight(initReps);
 		setWeight(exerciseRow.sessionExercise?.defaultWeight ?? 0);
-		setShowWeightInput(exerciseRow.sessionExercise?.defaultWeight != null);
+		const v = EXERCISE_VARIANTS_BY_ID[exerciseRow.workoutExercise.exerciseVariantId];
+		const isBodyweight = v?.equipment === "bodyweight";
+		setShowWeightInput(!isBodyweight || exerciseRow.sessionExercise?.defaultWeight != null);
 	}, [exerciseRow]);
 
 	// Rest countdown
@@ -99,10 +108,9 @@ export default function ExerciseScreen() {
 	const doneSets = completedSets.length;
 	const currentSet = doneSets + 1;
 
-	const exerciseId = workoutExercise.exerciseId;
-	const exercise = EXERCISES.find((e) => e.nameKey === exerciseId);
-	const name = exercise ? t(`exercises.names.${exercise.nameKey}`) : exerciseId;
-	const sessionName = exerciseRow.session?.name;
+	const isUnilateral = workoutExercise.isUnilateral;
+	const variant = EXERCISE_VARIANTS_BY_ID[workoutExercise.exerciseVariantId];
+	const name = variant ? t(`exercises.names.${variant.id}`) : workoutExercise.exerciseVariantId;
 
 	const restMinutes = Math.floor(restSecondsLeft / 60);
 	const restSeconds = restSecondsLeft % 60;
@@ -124,47 +132,66 @@ export default function ExerciseScreen() {
 		if (isSaving) return;
 		setIsSaving(true);
 		try {
-			await db.insert(workoutSets).values({
-				workoutExerciseId,
-				setIndex: doneSets,
-				reps,
-				weight: weight > 0 ? weight : null,
-				completedAt: new Date().toISOString(),
+			// Unilateral: first press confirms left side → switch to right
+			if (isUnilateral && unilateralSide === "left") {
+				Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+				setRepsRight(repsLeft);
+				setUnilateralSide("right");
+				return;
+			}
+
+			const nextDoneCount = doneSets + 1;
+			const sessionWorkoutId = workoutExercise.workoutSessionId;
+			const isLastSet = nextDoneCount >= totalSets;
+			let sessionCompleted = false;
+
+			await db.transaction(async (tx) => {
+				await tx.insert(workoutSets).values({
+					workoutExerciseId,
+					setIndex: doneSets,
+					...(isUnilateral ? { repsLeft, repsRight } : { reps }),
+					weight: weight > 0 ? weight : null,
+					completedAt: new Date().toISOString(),
+				});
+
+				if (isLastSet) {
+					await tx
+						.update(workoutExercises)
+						.set({ status: "completed" })
+						.where(eq(workoutExercises.id, workoutExerciseId));
+
+					const [{ remaining }] = await tx
+						.select({ remaining: sql<number>`count(*)` })
+						.from(workoutExercises)
+						.where(
+							and(
+								eq(workoutExercises.workoutSessionId, sessionWorkoutId),
+								ne(workoutExercises.status, "completed")
+							)
+						);
+
+					if (remaining === 0) {
+						await tx
+							.update(workoutSessions)
+							.set({ status: "completed", endedAt: new Date().toISOString() })
+							.where(eq(workoutSessions.id, sessionWorkoutId));
+						sessionCompleted = true;
+					}
+				}
 			});
+
 			Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-			if (doneSets + 1 >= totalSets) {
-				const sessionWorkoutId = workoutExercise.workoutSessionId;
-				await db
-					.update(workoutExercises)
-					.set({ status: "completed" })
-					.where(eq(workoutExercises.id, workoutExerciseId));
-
-				// Check if all exercises in the session are now completed
-				const [{ pendingCount }] = await db
-					.select({ pendingCount: sql<number>`count(*)` })
-					.from(workoutExercises)
-					.where(
-						and(
-							eq(workoutExercises.workoutSessionId, sessionWorkoutId),
-							ne(workoutExercises.status, "completed")
-						)
-					);
-
+			if (isLastSet) {
 				// Brief delay so the user sees the stepper fully green
 				await new Promise((resolve) => setTimeout(resolve, 350));
-
-				if (pendingCount === 0) {
-					// Last exercise — finalize and go to summary
-					await db
-						.update(workoutSessions)
-						.set({ status: "completed", endedAt: new Date().toISOString() })
-						.where(eq(workoutSessions.id, sessionWorkoutId));
+				if (sessionCompleted) {
 					router.replace(`/workout/summary/${sessionWorkoutId}`);
 				} else {
 					router.back();
 				}
 			} else {
+				setUnilateralSide("left");
 				setRestNextSet(doneSets + 2);
 				setRestTotalTime(restTime);
 				setRestSecondsLeft(restTime);
@@ -200,18 +227,9 @@ export default function ExerciseScreen() {
 					<View className="flex-row items-center gap-3 px-6 pt-2 pb-4">
 						<View className="flex-1 flex-row gap-2">
 							{Array.from({ length: totalSets }, (_, i) => i).map((i) => (
-								<View
+								<AnimatedSegment
 									key={`set-${i}`}
-									className="flex-1 rounded-full"
-									style={{
-										height: 6,
-										backgroundColor:
-											i < doneSets
-												? palette.primary.DEFAULT
-												: i === doneSets
-													? palette.muted.foreground
-													: palette.muted.DEFAULT,
-									}}
+									state={i < doneSets ? "done" : i === doneSets ? "current" : "pending"}
 								/>
 							))}
 						</View>
@@ -222,14 +240,66 @@ export default function ExerciseScreen() {
 
 					{/* Cards — centrées verticalement */}
 					<View className="flex-1 justify-center px-6 gap-6">
-						<ValueCard
-							label={t("workout.reps")}
-							value={reps}
-							target={prescribedReps}
-							targetLabel={t("workout.target", { value: prescribedReps })}
-							onDecrement={() => setReps((v) => Math.max(1, v - 1))}
-							onIncrement={() => setReps((v) => v + 1)}
-						/>
+						{isUnilateral ? (
+							<>
+								{/* L / R side indicator */}
+								<View className="flex-row gap-3 justify-center">
+									{(["left", "right"] as const).map((side) => {
+										const isDone = side === "left" && unilateralSide === "right";
+										const isActive = side === unilateralSide;
+										return (
+											<View
+												key={side}
+												className="flex-row items-center gap-1.5 px-4 py-2 rounded-xl"
+												style={{
+													backgroundColor: isDone
+														? `${palette.primary.DEFAULT}26`
+														: isActive
+															? `${palette.primary.DEFAULT}20`
+															: palette.muted.DEFAULT,
+													borderWidth: isActive ? 1 : 0,
+													borderColor: palette.primary.DEFAULT,
+												}}
+											>
+												{isDone && (
+													<Ionicons name="checkmark" size={14} color={palette.primary.DEFAULT} />
+												)}
+												<Text
+													className="text-sm font-semibold"
+													style={{ color: isActive || isDone ? palette.primary.DEFAULT : palette.muted.foreground }}
+												>
+													{side === "left" ? t("workout.repsLeft") : t("workout.repsRight")}
+												</Text>
+											</View>
+										);
+									})}
+								</View>
+								<ValueCard
+									label={unilateralSide === "left" ? t("workout.repsLeft") : t("workout.repsRight")}
+									value={unilateralSide === "left" ? repsLeft : repsRight}
+									targetLabel={t("workout.target", { value: prescribedReps })}
+									onDecrement={() =>
+										unilateralSide === "left"
+											? setRepsLeft((v) => Math.max(1, v - 1))
+											: setRepsRight((v) => Math.max(1, v - 1))
+									}
+									onIncrement={() =>
+										unilateralSide === "left"
+											? setRepsLeft((v) => v + 1)
+											: setRepsRight((v) => v + 1)
+									}
+								/>
+							</>
+						) : (
+							<ValueCard
+								label={t("workout.reps")}
+								value={reps}
+								target={prescribedReps}
+								targetLabel={t("workout.target", { value: prescribedReps })}
+								onDecrement={() => setReps((v) => Math.max(1, v - 1))}
+								onIncrement={() => setReps((v) => v + 1)}
+							/>
+						)}
 
 						{showWeightInput ? (
 							<WeightCard
@@ -259,9 +329,13 @@ export default function ExerciseScreen() {
 					<View className="px-6 pb-6 pt-4">
 						<Button
 							fullWidth
-							label={t("workout.validateSet", { set: currentSet })}
+							label={
+								isUnilateral && unilateralSide === "left"
+									? t("workout.validateLeft")
+									: t("workout.validateSet", { set: currentSet })
+							}
 							onPress={handleSaveSet}
-							disabled={isSaving}
+							loading={isSaving}
 						/>
 					</View>
 			</View>
@@ -303,7 +377,7 @@ function AnimatedSegment({ state }: { state: "done" | "current" | "pending" }) {
 		state === "done"
 			? palette.primary.DEFAULT
 			: state === "current"
-				? palette.muted.foreground
+				? palette.foreground
 				: palette.muted.DEFAULT;
 	const style = useAnimatedStyle(() => ({
 		backgroundColor: withTiming(targetColor, { duration: 300 }),

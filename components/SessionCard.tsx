@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
-import type { MuscleGroup } from "../lib/exercises";
+import type { MuscleGroup } from "../lib/exerciseTypes";
 import { palette } from "../lib/palette";
 import { ChipList } from "./ChipList";
 import { IconButton } from "./IconButton";

@@ -14,6 +14,10 @@ export default function RootLayout() {
 	const [i18nReady, setI18nReady] = useState(false);
 
 	useEffect(() => {
+		console.log("[migrations]", { success, error: error?.message });
+	}, [success, error]);
+
+	useEffect(() => {
 		initI18n().then(() => setI18nReady(true));
 	}, []);
 

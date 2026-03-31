@@ -15,7 +15,9 @@ import { SortableList } from "../../components/SortableList";
 import { TextField } from "../../components/TextField";
 import { db } from "../../db";
 import { programs, sessionExercises, sessions } from "../../db/schema";
-import { EXERCISES, type MuscleGroup } from "../../lib/exercises";
+import { EXERCISE_BASES_BY_ID } from "../../lib/exerciseBases";
+import { EXERCISE_VARIANTS_BY_ID } from "../../lib/exerciseVariants";
+import type { MuscleGroup } from "../../lib/exerciseTypes";
 
 type SessionRow = typeof sessions.$inferSelect;
 
@@ -38,7 +40,7 @@ export default function ProgramScreen() {
 
 	const { data: sessionExRows } = useLiveQuery(
 		db
-			.select({ sessionId: sessionExercises.sessionId, exerciseId: sessionExercises.exerciseId })
+			.select({ sessionId: sessionExercises.sessionId, exerciseVariantId: sessionExercises.exerciseVariantId })
 			.from(sessionExercises)
 			.innerJoin(sessions, eq(sessionExercises.sessionId, sessions.id))
 			.where(eq(sessions.programId, programId)),
@@ -96,7 +98,10 @@ export default function ProgramScreen() {
 			const rows = sessionExRows?.filter((r) => r.sessionId === item.id) ?? [];
 			const muscles = [
 				...new Set(
-					rows.flatMap((r) => EXERCISES.find((e) => e.nameKey === r.exerciseId)?.muscles ?? []),
+					rows.flatMap((r) => {
+				const variant = EXERCISE_VARIANTS_BY_ID[r.exerciseVariantId ?? ""];
+				return EXERCISE_BASES_BY_ID[variant?.baseId ?? ""]?.muscles ?? [];
+			}),
 				),
 			] as MuscleGroup[];
 
