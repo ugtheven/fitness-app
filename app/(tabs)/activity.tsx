@@ -94,7 +94,7 @@ export default function ActivityScreen() {
 
 	// Filter workouts by selected date (or show all for the month)
 	const filteredWorkouts = useMemo(() => {
-		if (selectedDate === null) return workouts;
+		if (selectedDate === null) return [];
 		return workouts.filter((w) => w.date === selectedDate);
 	}, [workouts, selectedDate]);
 
@@ -133,7 +133,7 @@ export default function ActivityScreen() {
 		<SafeAreaView className="flex-1 bg-background" edges={["top"]}>
 			<ScrollView
 				className="flex-1"
-				contentContainerStyle={{ paddingBottom: 24 }}
+				contentContainerStyle={{ paddingBottom: 100 }}
 				showsVerticalScrollIndicator={false}
 			>
 				{/* Header */}

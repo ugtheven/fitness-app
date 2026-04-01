@@ -105,7 +105,7 @@ export default function HomeScreen() {
 				<Pressable
 					onPress={() => setDrawerVisible(true)}
 					className="active:opacity-80"
-					style={{ paddingHorizontal: 16, paddingBottom: 12 }}
+					style={{ paddingHorizontal: 16, marginBottom: 112 }}
 				>
 					<View
 						className="flex-row items-center gap-3 px-4 py-3"

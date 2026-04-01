@@ -125,7 +125,7 @@ export default function ProgramsScreen() {
 					<EmptyState message={t("programs.empty")} hint={t("programs.emptyHint")} />
 				) : (
 					<ScrollView
-						contentContainerStyle={{ paddingTop: 20, paddingBottom: 24, gap: 12 }}
+						contentContainerStyle={{ paddingTop: 20, paddingBottom: 100, gap: 12 }}
 						showsVerticalScrollIndicator={false}
 					>
 						{/* Active program */}

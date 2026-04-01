@@ -10,6 +10,7 @@ export default function TabLayout() {
 			tabBar={(props) => <Navbar {...props} />}
 			screenOptions={{
 				headerShown: false,
+				tabBarStyle: { position: "absolute", backgroundColor: "transparent" },
 			}}
 		>
 			<Tabs.Screen name="index" options={{ title: t("tabs.home") }} />
