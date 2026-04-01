@@ -37,6 +37,7 @@ CREATE TABLE `workout_sessions` (
 	`program_id` integer,
 	`started_at` text NOT NULL,
 	`ended_at` text,
+	`date` text NOT NULL DEFAULT '',
 	`status` text NOT NULL DEFAULT 'in_progress',
 	FOREIGN KEY (`session_id`) REFERENCES `sessions`(`id`) ON DELETE SET NULL,
 	FOREIGN KEY (`program_id`) REFERENCES `programs`(`id`) ON DELETE SET NULL

@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { and, eq, sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { useLiveQuery } from "drizzle-orm/expo-sqlite";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -49,9 +49,9 @@ export default function HomeScreen() {
 		setLaunchingSessionId(sessionId);
 		try {
 			const workoutSessionId = await db.transaction(async (tx) => {
-				// Delete any interrupted session for this template (not resumed — always start fresh)
+				// Delete ALL interrupted sessions (not resumed — always start fresh)
 				await tx.delete(workoutSessions)
-					.where(and(eq(workoutSessions.sessionId, sessionId), eq(workoutSessions.status, "in_progress")));
+					.where(eq(workoutSessions.status, "in_progress"));
 
 				// Read exercises inside the transaction for atomicity
 				const exercises = await tx
@@ -62,10 +62,12 @@ export default function HomeScreen() {
 
 				if (exercises.length === 0) return null;
 
-				const now = new Date().toISOString();
+				const nowDate = new Date();
+				const now = nowDate.toISOString();
+				const localDate = `${nowDate.getFullYear()}-${String(nowDate.getMonth() + 1).padStart(2, "0")}-${String(nowDate.getDate()).padStart(2, "0")}`;
 				const [workoutSession] = await tx
 					.insert(workoutSessions)
-					.values({ sessionId, programId: activeProgram?.id ?? null, startedAt: now, status: "in_progress" })
+					.values({ sessionId, programId: activeProgram?.id ?? null, startedAt: now, date: localDate, status: "in_progress" })
 					.returning();
 
 				await tx.insert(workoutExercises).values(

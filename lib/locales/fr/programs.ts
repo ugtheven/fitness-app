@@ -50,4 +50,10 @@ workout: {
 	weightKg: "POIDS · KG",
 	target: "Objectif : {{value}}",
 },
+pr: {
+	newRecord: "Nouveau record ! {{weight}} kg",
+	prsBeaten: "Records battus",
+	previousRecord: "Avant : {{weight}} kg",
+	firstRecord: "Premier record",
+},
 } as const;

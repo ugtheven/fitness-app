@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { useLiveQuery } from "drizzle-orm/expo-sqlite";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef } from "react";
@@ -78,7 +78,7 @@ export default function WorkoutScreen() {
 			await db
 				.update(workoutSessions)
 				.set({ status: "completed", endedAt: new Date().toISOString() })
-				.where(eq(workoutSessions.id, workoutSessionId));
+				.where(and(eq(workoutSessions.id, workoutSessionId), eq(workoutSessions.status, "in_progress")));
 		}
 		finalize();
 	}, [exerciseRows, workoutSession, workoutSessionId]);

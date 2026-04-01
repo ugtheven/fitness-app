@@ -6,8 +6,8 @@ import { useLiveQuery } from "drizzle-orm/expo-sqlite";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, StyleSheet, Text, View } from "react-native";
-import Animated, { useAnimatedStyle, withTiming } from "react-native-reanimated";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import Animated, { FadeIn, useAnimatedStyle, withTiming } from "react-native-reanimated";
 import { Circle, Svg } from "react-native-svg";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "../../../components/Button";
@@ -15,6 +15,7 @@ import { ScreenHeader } from "../../../components/ScreenHeader";
 import { db } from "../../../db";
 import { sessionExercises, sessions, workoutExercises, workoutSessions, workoutSets } from "../../../db/schema";
 import { EXERCISE_VARIANTS_BY_ID } from "../../../lib/exerciseVariants";
+import { type PrefillSet, getExercisePR, getLastSets } from "../../../lib/workoutHistory";
 import { useSessionTimer } from "../../../lib/useSessionTimer";
 import { palette } from "../../../lib/palette";
 
@@ -35,9 +36,14 @@ export default function ExerciseScreen() {
 	const [restSecondsLeft, setRestSecondsLeft] = useState(0);
 	const [restTotalTime, setRestTotalTime] = useState(90);
 	const [restNextSet, setRestNextSet] = useState(1);
+	const [isPrefillLoading, setIsPrefillLoading] = useState(true);
+	const [newPRWeight, setNewPRWeight] = useState<number | null>(null);
 
 	const restIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+	const prTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const hasInitializedRef = useRef(false);
+	const prefillSetsRef = useRef<PrefillSet[]>([]);
+	const prMaxRef = useRef<number | null>(null);
 
 	const { data: exerciseData } = useLiveQuery(
 		db
@@ -63,18 +69,43 @@ export default function ExerciseScreen() {
 			.orderBy(workoutSets.setIndex)
 	);
 
-	// Init reps & weight from session exercise config (once only)
+	// Init reps & weight from last workout (prefill) or template (fallback)
 	useEffect(() => {
 		if (!exerciseRow || hasInitializedRef.current) return;
 		hasInitializedRef.current = true;
-		const initReps = exerciseRow.sessionExercise?.reps ?? exerciseRow.workoutExercise.prescribedReps;
-		setReps(initReps);
-		setRepsLeft(initReps);
-		setRepsRight(initReps);
-		setWeight(exerciseRow.sessionExercise?.defaultWeight ?? 0);
-		const v = EXERCISE_VARIANTS_BY_ID[exerciseRow.workoutExercise.exerciseVariantId];
+
+		const variantId = exerciseRow.workoutExercise.exerciseVariantId;
+		const templateReps = exerciseRow.sessionExercise?.reps ?? exerciseRow.workoutExercise.prescribedReps;
+		const templateWeight = exerciseRow.sessionExercise?.defaultWeight ?? 0;
+		const v = EXERCISE_VARIANTS_BY_ID[variantId];
 		const isBodyweight = v?.equipment === "bodyweight";
-		setShowWeightInput(!isBodyweight || exerciseRow.sessionExercise?.defaultWeight != null);
+
+		getExercisePR(variantId).then((pr) => {
+			prMaxRef.current = pr?.maxWeight ?? null;
+		});
+
+		getLastSets(variantId).then((prefillSets) => {
+			prefillSetsRef.current = prefillSets;
+
+			// Use first prefill set if available, otherwise fall back to template
+			const first = prefillSets[0];
+			if (first) {
+				const initReps = first.reps ?? templateReps;
+				const initWeight = first.weight ?? templateWeight;
+				setReps(initReps);
+				setRepsLeft(first.repsLeft ?? initReps);
+				setRepsRight(first.repsRight ?? initReps);
+				setWeight(initWeight);
+				setShowWeightInput(!isBodyweight || initWeight > 0);
+			} else {
+				setReps(templateReps);
+				setRepsLeft(templateReps);
+				setRepsRight(templateReps);
+				setWeight(templateWeight);
+				setShowWeightInput(!isBodyweight || templateWeight > 0);
+			}
+			setIsPrefillLoading(false);
+		});
 	}, [exerciseRow]);
 
 	// Rest countdown
@@ -99,7 +130,13 @@ export default function ExerciseScreen() {
 
 	const timerLabel = useSessionTimer(exerciseRow?.workoutSession?.startedAt);
 
-	if (!exerciseRow) return null;
+	if (!exerciseRow || isPrefillLoading) {
+		return (
+			<SafeAreaView className="flex-1 bg-background items-center justify-center" edges={["top"]}>
+				<ActivityIndicator size="large" color={palette.primary.DEFAULT} />
+			</SafeAreaView>
+		);
+	}
 
 	const { workoutExercise, sessionExercise } = exerciseRow;
 	const totalSets = workoutExercise.prescribedSets;
@@ -126,6 +163,14 @@ export default function ExerciseScreen() {
 		Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 		setRestSecondsLeft((v) => v + 30);
 		setRestTotalTime((v) => v + 30);
+	}
+
+	function applyPrefill(p: PrefillSet) {
+		const tplReps = exerciseRow?.sessionExercise?.reps ?? workoutExercise.prescribedReps;
+		setReps(p.reps ?? tplReps);
+		setRepsLeft(p.repsLeft ?? p.reps ?? tplReps);
+		setRepsRight(p.repsRight ?? p.reps ?? tplReps);
+		if (p.weight != null) setWeight(p.weight);
 	}
 
 	async function handleSaveSet() {
@@ -182,6 +227,15 @@ export default function ExerciseScreen() {
 
 			Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
+			// PR detection
+			const setWeight = weight > 0 ? weight : null;
+			if (setWeight != null && (prMaxRef.current == null || setWeight > prMaxRef.current)) {
+				prMaxRef.current = setWeight;
+				setNewPRWeight(setWeight);
+				if (prTimerRef.current) clearTimeout(prTimerRef.current);
+				prTimerRef.current = setTimeout(() => setNewPRWeight(null), 3000);
+			}
+
 			if (isLastSet) {
 				// Brief delay so the user sees the stepper fully green
 				await new Promise((resolve) => setTimeout(resolve, 350));
@@ -191,6 +245,17 @@ export default function ExerciseScreen() {
 					router.back();
 				}
 			} else {
+				// Prefill next set values from history
+				const nextSetIndex = doneSets + 1;
+				const prefillSets = prefillSetsRef.current;
+				const nextPrefill = prefillSets.length > 0
+					? prefillSets[Math.min(nextSetIndex, prefillSets.length - 1)]
+					: null;
+				if (nextPrefill) {
+					applyPrefill(nextPrefill);
+				}
+
+				setNewPRWeight(null);
 				setUnilateralSide("left");
 				setRestNextSet(doneSets + 2);
 				setRestTotalTime(restTime);
@@ -324,6 +389,11 @@ export default function ExerciseScreen() {
 							</Pressable>
 						)}
 					</View>
+
+					{/* PR badge */}
+					{newPRWeight != null && (
+						<PRBadge label={t("pr.newRecord", { weight: newPRWeight })} />
+					)}
 
 					{/* Bouton fixe en bas */}
 					<View className="px-6 pb-6 pt-4">
@@ -484,6 +554,21 @@ function ValueCard({ label, value, target, targetLabel, onDecrement, onIncrement
 				</Text>
 			)}
 		</View>
+	);
+}
+
+function PRBadge({ label }: { label: string }) {
+	return (
+		<Animated.View
+			entering={FadeIn.duration(300)}
+			className="mx-6 rounded-2xl px-4 py-3 flex-row items-center justify-center gap-2"
+			style={{ backgroundColor: `${palette.primary.DEFAULT}20`, borderWidth: 1, borderColor: `${palette.primary.DEFAULT}40` }}
+		>
+			<Ionicons name="flash" size={16} color={palette.primary.DEFAULT} />
+			<Text className="text-sm font-bold" style={{ color: palette.primary.DEFAULT }}>
+				{label}
+			</Text>
+		</Animated.View>
 	);
 }
 

@@ -7,7 +7,28 @@ export default {
 	},
 	tabs: {
 		home: "Accueil",
+		activity: "Activité",
 		programs: "Programmes",
 		settings: "Paramètres",
+	},
+	activity: {
+		title: "Activité",
+		subtitle: "Ton historique d'entraînement",
+		noWorkouts: "Aucune séance enregistrée.",
+		noWorkoutsHint: "Terminez une séance pour la voir ici.",
+		deletedSession: "Séance",
+		workoutDetail: "Détail de séance",
+		noWorkoutsThisDay: "Aucune séance ce jour",
+		noWorkoutsThisMonth: "Aucune séance ce mois",
+		statSessions: "Séances",
+		statVolume: "Volume",
+		statTime: "Temps",
+		calendarHint: "Appuie sur un jour pour voir tes objectifs et détails de séance",
+	},
+	exerciseHistory: {
+		title: "Historique",
+		totalSets: "Séries totales",
+		maxWeight: "Poids max",
+		noHistory: "Pas encore d'historique",
 	},
 } as const;

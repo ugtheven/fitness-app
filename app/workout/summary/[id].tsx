@@ -2,13 +2,16 @@ import { Ionicons } from "@expo/vector-icons";
 import { eq, sql } from "drizzle-orm";
 import { useLiveQuery } from "drizzle-orm/expo-sqlite";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "../../../components/Button";
 import { db } from "../../../db";
 import { sessions, workoutExercises, workoutSessions, workoutSets } from "../../../db/schema";
+import { EXERCISE_VARIANTS_BY_ID } from "../../../lib/exerciseVariants";
 import { palette } from "../../../lib/palette";
+import { getSessionPRs } from "../../../lib/workoutHistory";
 
 export default function WorkoutSummaryScreen() {
 	const { t } = useTranslation();
@@ -41,12 +44,21 @@ export default function WorkoutSummaryScreen() {
 		db
 			.select({
 				total: sql<number>`count(${workoutSets.id})`,
-				volume: sql<number>`coalesce(sum(${workoutSets.reps} * ${workoutSets.weight}), 0)`,
+				volume: sql<number>`coalesce(sum(
+					coalesce(${workoutSets.reps}, coalesce(${workoutSets.repsLeft}, 0) + coalesce(${workoutSets.repsRight}, 0))
+					* coalesce(${workoutSets.weight}, 0)
+				), 0)`,
 			})
 			.from(workoutSets)
 			.innerJoin(workoutExercises, eq(workoutSets.workoutExerciseId, workoutExercises.id))
 			.where(eq(workoutExercises.workoutSessionId, workoutSessionId))
 	);
+
+	const [prs, setPrs] = useState<Awaited<ReturnType<typeof getSessionPRs>>>([]);
+
+	useEffect(() => {
+		getSessionPRs(workoutSessionId).then(setPrs);
+	}, [workoutSessionId]);
 
 	if (!workoutSession) return null;
 
@@ -106,6 +118,43 @@ export default function WorkoutSummaryScreen() {
 					<StatCard label={t("workout.totalSets")} value={String(totalSets)} />
 					<StatCard label={t("workout.volume")} value={volumeLabel} muted={totalVolume === 0} />
 				</View>
+
+				{/* PRs beaten */}
+				{prs.length > 0 && (
+					<View className="w-full gap-2">
+						<View className="flex-row items-center gap-2 justify-center">
+							<Ionicons name="flash" size={16} color={palette.primary.DEFAULT} />
+							<Text className="text-sm font-bold" style={{ color: palette.primary.DEFAULT }}>
+								{t("pr.prsBeaten")}
+							</Text>
+						</View>
+						{prs.map((pr) => {
+							const variant = EXERCISE_VARIANTS_BY_ID[pr.exerciseVariantId];
+							const name = variant ? t(`exercises.names.${variant.id}`) : pr.exerciseVariantId;
+							return (
+								<View
+									key={pr.exerciseVariantId}
+									className="flex-row items-center justify-between rounded-2xl px-4 py-3"
+									style={{ backgroundColor: `${palette.primary.DEFAULT}15` }}
+								>
+									<Text className="text-sm font-semibold text-foreground flex-1 mr-3" numberOfLines={1}>
+										{name}
+									</Text>
+									<View className="items-end">
+										<Text className="text-sm font-bold" style={{ color: palette.primary.DEFAULT }}>
+											{pr.newWeight} kg
+										</Text>
+										<Text className="text-xs" style={{ color: palette.muted.foreground }}>
+											{pr.previousWeight != null
+												? t("pr.previousRecord", { weight: pr.previousWeight })
+												: t("pr.firstRecord")}
+										</Text>
+									</View>
+								</View>
+							);
+						})}
+					</View>
+				)}
 			</View>
 
 			{/* CTA */}

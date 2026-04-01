@@ -42,6 +42,8 @@ export const workoutSessions = sqliteTable("workout_sessions", {
 	programId: int("program_id").references(() => programs.id, { onDelete: "set null" }),
 	startedAt: text("started_at").notNull(),
 	endedAt: text("ended_at"),
+	/** Local date YYYY-MM-DD — used for calendar, stats, streaks (timezone-safe) */
+	date: text("date").notNull(),
 	status: text("status", { enum: ["in_progress", "completed"] })
 		.notNull()
 		.default("in_progress"),
