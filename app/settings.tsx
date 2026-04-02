@@ -5,11 +5,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ScreenHeader } from "../components/ScreenHeader";
 import { changeLanguage, type Language } from "../lib/i18n";
 import { palette } from "../lib/palette";
+import { useUnits, type UnitSystem } from "../lib/units";
 
 export default function SettingsScreen() {
 	const { t, i18n } = useTranslation();
 	const router = useRouter();
 	const currentLang = i18n.language as Language;
+	const { system, setSystem } = useUnits();
 
 	async function handleLanguageChange(lang: Language) {
 		await changeLanguage(lang);
@@ -52,6 +54,42 @@ export default function SettingsScreen() {
 								</View>
 							</Pressable>
 						))}
+					</View>
+
+					{/* Units */}
+					<View className="mt-4 gap-3">
+						<Text
+							className="text-sm font-medium uppercase tracking-widest"
+							style={{ color: palette.muted.foreground }}
+						>
+							{t("settings.units")}
+						</Text>
+						<View className="rounded-2xl overflow-hidden" style={{ backgroundColor: palette.card.DEFAULT }}>
+							{(["metric", "imperial"] as UnitSystem[]).map((u, index, arr) => (
+								<Pressable
+									key={u}
+									onPress={() => setSystem(u)}
+									className="active:opacity-70"
+								>
+									<View
+										className="flex-row items-center justify-between px-5 py-4"
+										style={index < arr.length - 1 ? { borderBottomWidth: 1, borderBottomColor: palette.border } : undefined}
+									>
+										<Text className="text-base text-foreground">
+											{t(`settings.${u}`)}
+										</Text>
+										{system === u && (
+											<View
+												className="h-5 w-5 rounded-full items-center justify-center"
+												style={{ backgroundColor: palette.foreground }}
+											>
+												<View className="h-2 w-2 rounded-full" style={{ backgroundColor: palette.background }} />
+											</View>
+										)}
+									</View>
+								</Pressable>
+							))}
+						</View>
 					</View>
 				</View>
 			</View>

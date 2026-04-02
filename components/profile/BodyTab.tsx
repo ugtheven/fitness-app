@@ -12,26 +12,23 @@ import {
 	getWeightLogsQuery,
 } from "../../lib/profileQueries";
 import { EditHeightDrawer } from "./EditHeightDrawer";
+import { useUnits } from "../../lib/units";
 import { LogMeasurementsDrawer } from "./LogMeasurementsDrawer";
 import { LogWeightDrawer } from "./LogWeightDrawer";
 import { WeightChart } from "./WeightChart";
 
 type MeasurementKey = "bodyFat" | "shoulders" | "chest" | "waist" | "hips" | "neck" | "arms" | "thigh" | "calf";
 
-const MEASUREMENT_FIELDS: { key: MeasurementKey; unit: string; color: string }[] = [
-	{ key: "bodyFat", unit: "%", color: "#4CAF50" },
-	{ key: "shoulders", unit: "cm", color: "#2196F3" },
-	{ key: "chest", unit: "cm", color: "#2196F3" },
-	{ key: "waist", unit: "cm", color: "#2196F3" },
-	{ key: "hips", unit: "cm", color: "#2196F3" },
-	{ key: "neck", unit: "cm", color: "#2196F3" },
-	{ key: "arms", unit: "cm", color: "#2196F3" },
-	{ key: "thigh", unit: "cm", color: "#2196F3" },
-	{ key: "calf", unit: "cm", color: "#2196F3" },
-];
+const MEASUREMENT_KEYS: MeasurementKey[] = ["bodyFat", "shoulders", "chest", "waist", "hips", "neck", "arms", "thigh", "calf"];
+const MEASUREMENT_COLORS: Record<MeasurementKey, string> = {
+	bodyFat: "#4CAF50",
+	shoulders: "#2196F3", chest: "#2196F3", waist: "#2196F3", hips: "#2196F3",
+	neck: "#2196F3", arms: "#2196F3", thigh: "#2196F3", calf: "#2196F3",
+};
 
 export function BodyTab() {
 	const { t } = useTranslation();
+	const { displayWeight, weightUnit, displayLength, displayHeight, lengthUnit, heightUnit } = useUnits();
 
 	const { data: twoWeights = [] } = useLiveQuery(getTwoLatestWeightsQuery());
 	const { data: weightLogs = [] } = useLiveQuery(getWeightLogsQuery());
@@ -62,10 +59,10 @@ export function BodyTab() {
 						</Text>
 						<View className="flex-row items-baseline">
 							<Text className="text-2xl font-bold text-foreground">
-								{latestWeight != null ? latestWeight : "—"}
+								{latestWeight != null ? displayWeight(latestWeight) : "—"}
 							</Text>
 							{latestWeight != null && (
-								<Text className="text-sm ml-1" style={{ color: palette.muted.foreground }}>kg</Text>
+								<Text className="text-sm ml-1" style={{ color: palette.muted.foreground }}>{weightUnit}</Text>
 							)}
 						</View>
 						{weightDelta != null && (
@@ -76,7 +73,7 @@ export function BodyTab() {
 									color={palette.primary.DEFAULT}
 								/>
 								<Text className="text-xs font-semibold" style={{ color: palette.primary.DEFAULT }}>
-									{weightDelta >= 0 ? "+" : ""}{Math.round(weightDelta * 10) / 10} kg
+									{weightDelta >= 0 ? "+" : ""}{displayWeight(Math.abs(weightDelta))} {weightUnit}
 								</Text>
 							</View>
 						)}
@@ -84,15 +81,18 @@ export function BodyTab() {
 
 					<Pressable className="flex-1 active:opacity-70" onPress={() => setShowHeightDrawer(true)}>
 						<View className="rounded-2xl px-4 py-3" style={{ backgroundColor: palette.card.DEFAULT }}>
-							<Text className="text-xs font-medium mb-1" style={{ color: palette.muted.foreground }}>
-								{t("profile.height")}
-							</Text>
+							<View className="flex-row items-center justify-between mb-1">
+								<Text className="text-xs font-medium" style={{ color: palette.muted.foreground }}>
+									{t("profile.height")}
+								</Text>
+								<Ionicons name="pencil" size={12} color={palette.muted.foreground} />
+							</View>
 							<View className="flex-row items-baseline">
 								<Text className="text-2xl font-bold text-foreground">
-									{heightCm != null ? heightCm : "—"}
+									{heightCm != null ? displayHeight(heightCm) : "—"}
 								</Text>
 								{heightCm != null && (
-									<Text className="text-sm ml-1" style={{ color: palette.muted.foreground }}>cm</Text>
+									<Text className="text-sm ml-1" style={{ color: palette.muted.foreground }}>{heightUnit}</Text>
 								)}
 							</View>
 						</View>
@@ -117,11 +117,15 @@ export function BodyTab() {
 				</View>
 
 				<View className="flex-row flex-wrap" style={{ gap: 10 }}>
-					{MEASUREMENT_FIELDS.map((field) => {
-						const value = latestMeasurements?.[field.key] ?? null;
+					{MEASUREMENT_KEYS.map((key) => {
+						const rawValue = latestMeasurements?.[key] ?? null;
+						const unit = key === "bodyFat" ? "%" : lengthUnit;
+						const value = rawValue != null
+							? (key === "bodyFat" ? rawValue : displayLength(rawValue))
+							: null;
 						return (
 							<View
-								key={field.key}
+								key={key}
 								className="rounded-2xl px-3 py-3 items-center"
 								style={{
 									backgroundColor: palette.card.DEFAULT,
@@ -130,21 +134,21 @@ export function BodyTab() {
 								}}
 							>
 								<Text className="text-xs font-medium mb-1" style={{ color: palette.muted.foreground }}>
-									{t(`profile.${field.key}`)}
+									{t(`profile.${key}`)}
 								</Text>
 								<Text className="text-xl font-bold text-foreground">
 									{value != null ? value : "—"}
 								</Text>
 								<View className="flex-row items-center gap-1 mt-0.5">
 									<Text className="text-xs" style={{ color: palette.muted.foreground }}>
-										{field.unit}
+										{unit}
 									</Text>
 									<View
 										style={{
 											width: 5,
 											height: 5,
 											borderRadius: 2.5,
-											backgroundColor: field.color,
+											backgroundColor: MEASUREMENT_COLORS[key],
 										}}
 									/>
 								</View>

@@ -148,7 +148,6 @@ export default function WorkoutScreen() {
 							onPress={() => router.push(`/workout/exercise/${workoutExercise.id}`)}
 							onLayout={(e) => { itemLayoutsRef.current[workoutExercise.id] = e.nativeEvent.layout.y; }}
 							className="active:opacity-70"
-							disabled={isDone}
 						>
 							<View
 								className="flex-row items-center gap-3 rounded-2xl px-4 py-4"

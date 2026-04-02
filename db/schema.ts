@@ -71,6 +71,7 @@ export const workoutExercises = sqliteTable(
 		prescribedSets: int("prescribed_sets").notNull(),
 		prescribedReps: int("prescribed_reps").notNull(),
 		prescribedWeight: real("prescribed_weight"),
+		prescribedRestTime: int("prescribed_rest_time").notNull().default(90),
 		status: text("status", { enum: ["pending", "completed", "skipped"] })
 			.notNull()
 			.default("pending"),

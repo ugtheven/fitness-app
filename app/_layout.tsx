@@ -1,7 +1,7 @@
 import "../global.css";
 import { useMigrations } from "drizzle-orm/expo-sqlite/migrator";
 import { Stack } from "expo-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import migrations from "../drizzle/migrations";
@@ -9,10 +9,21 @@ import { db } from "../db";
 import { palette } from "../lib/palette";
 import { initI18n } from "../lib/i18n";
 import { seedWeightLogs } from "../lib/seedWeight";
+import { buildContextValue, loadUnitSystem, saveUnitSystem, UnitContext, type UnitSystem } from "../lib/units";
 
 export default function RootLayout() {
 	const { success, error } = useMigrations(db, migrations);
 	const [i18nReady, setI18nReady] = useState(false);
+	const [unitSystem, setUnitSystemState] = useState<UnitSystem>("metric");
+
+	const setUnitSystem = useCallback(async (s: UnitSystem) => {
+		setUnitSystemState(s);
+		await saveUnitSystem(s);
+	}, []);
+
+	useEffect(() => {
+		loadUnitSystem().then(setUnitSystemState);
+	}, []);
 
 	useEffect(() => {
 		console.log("[migrations]", { success, error: error?.message });
@@ -41,14 +52,18 @@ export default function RootLayout() {
 		);
 	}
 
+	const unitContextValue = buildContextValue(unitSystem, setUnitSystem);
+
 	return (
-		<GestureHandlerRootView style={{ flex: 1 }}>
-			<Stack
-				screenOptions={{
-					headerShown: false,
-					contentStyle: { backgroundColor: palette.background },
-				}}
-			/>
-		</GestureHandlerRootView>
+		<UnitContext.Provider value={unitContextValue}>
+			<GestureHandlerRootView style={{ flex: 1 }}>
+				<Stack
+					screenOptions={{
+						headerShown: false,
+						contentStyle: { backgroundColor: palette.background },
+					}}
+				/>
+			</GestureHandlerRootView>
+		</UnitContext.Provider>
 	);
 }

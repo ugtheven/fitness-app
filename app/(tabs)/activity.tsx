@@ -7,6 +7,7 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Calendar } from "../../components/Calendar";
 import { palette } from "../../lib/palette";
+import { useUnits } from "../../lib/units";
 import { getSessionPRs, getWorkoutsByMonthQuery } from "../../lib/workoutHistory";
 
 function formatDuration(startedAt: string, endedAt: string | null): string {
@@ -23,15 +24,15 @@ function formatDuration(startedAt: string, endedAt: string | null): string {
 	return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
-function formatVolume(volume: number): string {
+function formatVolume(volume: number, unit: string): string {
 	if (volume === 0) return "—";
 	if (volume >= 1000) {
 		const thousands = Math.floor(volume / 1000);
 		const remainder = Math.round((volume % 1000) / 10) * 10;
-		if (remainder === 0) return `${thousands} 000 kg`;
-		return `${thousands} ${String(remainder).padStart(3, "0")} kg`;
+		if (remainder === 0) return `${thousands} 000 ${unit}`;
+		return `${thousands} ${String(remainder).padStart(3, "0")} ${unit}`;
 	}
-	return `${Math.round(volume)} kg`;
+	return `${Math.round(volume)} ${unit}`;
 }
 
 /** Format a YYYY-MM-DD local date for display */
@@ -46,6 +47,7 @@ function formatWorkoutDate(dateStr: string, locale: string): string {
 
 export default function ActivityScreen() {
 	const { t, i18n } = useTranslation();
+	const { displayWeight, weightUnit } = useUnits();
 	const router = useRouter();
 
 	const now = new Date();
@@ -125,9 +127,10 @@ export default function ActivityScreen() {
 			}
 		}
 		const totalHours = Math.round(totalTimeMs / 3_600_000 * 10) / 10;
-		const totalTons = Math.round(totalVolume / 100) / 10;
+		const displayedVolume = displayWeight(totalVolume);
+		const totalTons = Math.round(displayedVolume / 100) / 10;
 		return { sessions: workouts.length, volume: totalTons, hours: totalHours };
-	}, [workouts]);
+	}, [workouts, displayWeight]);
 
 	return (
 		<SafeAreaView className="flex-1 bg-background" edges={["top"]}>
@@ -240,7 +243,7 @@ export default function ActivityScreen() {
 										</Text>
 										<Text className="text-xs" style={{ color: palette.muted.foreground }}>·</Text>
 										<Text className="text-xs" style={{ color: palette.muted.foreground }}>
-											{formatVolume(workout.totalVolume)}
+											{formatVolume(displayWeight(workout.totalVolume), weightUnit)}
 										</Text>
 										{(prCounts.get(workout.id) ?? 0) > 0 && (
 											<>

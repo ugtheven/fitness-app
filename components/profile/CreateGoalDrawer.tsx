@@ -1,11 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useLiveQuery } from "drizzle-orm/expo-sqlite";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
 import { palette } from "../../lib/palette";
 import { getLatestMeasurementsQuery, getLatestWeightQuery, insertGoal } from "../../lib/profileQueries";
+import { useUnits } from "../../lib/units";
 import { BottomDrawer } from "../BottomDrawer";
 import { Button } from "../Button";
 import { NumberField } from "../NumberField";
@@ -26,8 +27,8 @@ function daysUntil(deadline: string): number {
 	return Math.max(0, Math.ceil((target.getTime() - now.getTime()) / 86400000));
 }
 
-function getUnit(type: GoalType): string {
-	return type === "bodyFat" ? "%" : type === "weight" ? "kg" : "cm";
+function getUnitLabel(type: GoalType, weightUnit: string, lengthUnit: string): string {
+	return type === "bodyFat" ? "%" : type === "weight" ? weightUnit : lengthUnit;
 }
 
 function getStep(type: GoalType): number {
@@ -41,12 +42,24 @@ type Props = {
 
 export function CreateGoalDrawer({ visible, onClose }: Props) {
 	const { t } = useTranslation();
+	const { displayWeight, displayLength, toStorageWeight, toStorageLength, weightUnit, lengthUnit } = useUnits();
 	const [category, setCategory] = useState<Category>("weight");
 	const [measurementKey, setMeasurementKey] = useState<GoalType>("chest");
-	const [targetValue, setTargetValue] = useState(80);
+	const [targetValue, setTargetValue] = useState(() => displayWeight(80));
 	const [deadlineDate, setDeadlineDate] = useState<Date | null>(null);
 	const [showPicker, setShowPicker] = useState(false);
 	const [saving, setSaving] = useState(false);
+
+	// Reset form when drawer opens
+	useEffect(() => {
+		if (visible) {
+			setCategory("weight");
+			setMeasurementKey("chest");
+			setTargetValue(displayWeight(80));
+			setDeadlineDate(null);
+			setShowPicker(false);
+		}
+	}, [visible, displayWeight]);
 
 	const { data: latestWeights = [] } = useLiveQuery(getLatestWeightQuery());
 	const { data: latestMeasurements = [] } = useLiveQuery(getLatestMeasurementsQuery());
@@ -60,7 +73,12 @@ export function CreateGoalDrawer({ visible, onClose }: Props) {
 		return m[goalType as keyof typeof m] as number | null;
 	}, [goalType, latestWeights, latestMeasurements]);
 
-	const unit = getUnit(goalType);
+	const unit = getUnitLabel(goalType, weightUnit, lengthUnit);
+	const displayVal = (v: number | null) => {
+		if (v == null) return null;
+		if (goalType === "bodyFat") return v;
+		return goalType === "weight" ? displayWeight(v) : displayLength(v);
+	};
 	const deadline = deadlineDate
 		? `${deadlineDate.getFullYear()}-${String(deadlineDate.getMonth() + 1).padStart(2, "0")}-${String(deadlineDate.getDate()).padStart(2, "0")}`
 		: "";
@@ -70,10 +88,13 @@ export function CreateGoalDrawer({ visible, onClose }: Props) {
 		if (!deadline) return;
 		setSaving(true);
 		try {
+			const toStorage = goalType === "bodyFat"
+				? (v: number) => v
+				: goalType === "weight" ? toStorageWeight : toStorageLength;
 			await insertGoal({
 				type: goalType,
-				targetValue,
-				startValue: currentValue ?? targetValue,
+				targetValue: toStorage(targetValue),
+				startValue: currentValue ?? toStorage(targetValue),
 				deadline,
 			});
 			onClose();
@@ -150,7 +171,7 @@ export function CreateGoalDrawer({ visible, onClose }: Props) {
 						{t("profile.current")} {t(`profile.${goalType === "weight" ? "weight" : goalType}`)}
 					</Text>
 					<Text className="text-base font-bold text-foreground">
-						{currentValue != null ? `${currentValue} ${unit}` : "—"}
+						{currentValue != null ? `${displayVal(currentValue)} ${unit}` : "—"}
 					</Text>
 				</View>
 

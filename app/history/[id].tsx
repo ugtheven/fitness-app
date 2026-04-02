@@ -12,6 +12,7 @@ import { sessions, workoutSessions } from "../../db/schema";
 import type { Equipment } from "../../lib/exerciseTypes";
 import { EXERCISE_VARIANTS_BY_ID } from "../../lib/exerciseVariants";
 import { palette } from "../../lib/palette";
+import { useUnits } from "../../lib/units";
 import {
 	getExerciseHistoryDetailed,
 	getExercisePR,
@@ -46,12 +47,12 @@ function formatSetLine(set: {
 	repsLeft: number | null;
 	repsRight: number | null;
 	weight: number | null;
-}, isUnilateral: boolean): string {
+}, isUnilateral: boolean, displayWeight: (kg: number) => number, weightUnit: string): string {
 	const repsStr = isUnilateral
 		? `${set.repsLeft ?? 0}L / ${set.repsRight ?? 0}R`
 		: `${set.reps ?? 0}`;
 	if (set.weight != null && set.weight > 0) {
-		return `${repsStr} × ${set.weight} kg`;
+		return `${repsStr} × ${displayWeight(set.weight)} ${weightUnit}`;
 	}
 	return `${repsStr} reps`;
 }
@@ -91,6 +92,7 @@ type ExerciseHistorySheet = {
 
 export default function WorkoutDetailScreen() {
 	const { t } = useTranslation();
+	const { displayWeight, weightUnit } = useUnits();
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const workoutSessionId = Number(id);
 	const router = useRouter();
@@ -164,7 +166,7 @@ export default function WorkoutDetailScreen() {
 
 	const totalVolume = computeVolume(exercises);
 	const totalSets = exercises.reduce((sum, ex) => sum + ex.sets.length, 0);
-	const volumeLabel = totalVolume > 0 ? `${Math.round(totalVolume)} kg` : "—";
+	const volumeLabel = totalVolume > 0 ? `${Math.round(displayWeight(totalVolume))} ${weightUnit}` : "—";
 
 	return (
 		<SafeAreaView className="flex-1 bg-background" edges={["top"]}>
@@ -231,11 +233,11 @@ export default function WorkoutDetailScreen() {
 										style={{ backgroundColor: `${palette.primary.DEFAULT}15` }}
 									>
 										<Text className="text-xs font-bold" style={{ color: palette.primary.DEFAULT }}>
-											{pr.newWeight} kg
+											{displayWeight(pr.newWeight)} {weightUnit}
 										</Text>
 										<Text className="text-xs" style={{ color: palette.muted.foreground }}>
 											{pr.previousWeight != null
-												? t("pr.previousRecord", { weight: pr.previousWeight })
+												? t("pr.previousRecord", { weight: displayWeight(pr.previousWeight), unit: weightUnit })
 												: t("pr.firstRecord")}
 										</Text>
 									</View>
@@ -249,7 +251,7 @@ export default function WorkoutDetailScreen() {
 												{i + 1}
 											</Text>
 											<Text className="text-sm text-foreground">
-												{formatSetLine(set, ex.isUnilateral)}
+												{formatSetLine(set, ex.isUnilateral, displayWeight, weightUnit)}
 											</Text>
 										</View>
 									))}
@@ -278,7 +280,7 @@ export default function WorkoutDetailScreen() {
 						{/* Stats */}
 						<View className="flex-row gap-3">
 							{historyPR != null && (
-								<StatPill label={t("exerciseHistory.maxWeight")} value={`${historyPR} kg`} />
+								<StatPill label={t("exerciseHistory.maxWeight")} value={`${displayWeight(historyPR)} ${weightUnit}`} />
 							)}
 							<StatPill label={t("exerciseHistory.totalSets")} value={String(historyTotalSets)} />
 						</View>
@@ -302,7 +304,7 @@ export default function WorkoutDetailScreen() {
 														{i + 1}
 													</Text>
 													<Text className="text-sm text-foreground">
-														{formatSetLine(set, set.isUnilateral)}
+														{formatSetLine(set, set.isUnilateral, displayWeight, weightUnit)}
 													</Text>
 												</View>
 											))}

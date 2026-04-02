@@ -4,6 +4,9 @@ export default {
 		language: "Language",
 		english: "English",
 		french: "French",
+		units: "Units",
+		metric: "Metric (kg, cm)",
+		imperial: "Imperial (lbs, in)",
 	},
 	tabs: {
 		home: "Home",

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { palette } from "../../lib/palette";
+import { useUnits } from "../../lib/units";
 import {
 	getActiveGoalsQuery,
 	getLatestMeasurementsQuery,
@@ -26,8 +27,8 @@ function daysUntil(deadline: string): number {
 	return Math.ceil((target.getTime() - now.getTime()) / 86400000);
 }
 
-function getUnit(type: GoalType): string {
-	return type === "bodyFat" ? "%" : type === "weight" ? "kg" : "cm";
+function getUnit(type: GoalType, weightUnit: string, lengthUnit: string): string {
+	return type === "bodyFat" ? "%" : type === "weight" ? weightUnit : lengthUnit;
 }
 
 function computeProgress(startValue: number, currentValue: number, targetValue: number): number {
@@ -46,6 +47,7 @@ function isGoalReached(currentValue: number, targetValue: number, startValue: nu
 
 export function GoalsTab() {
 	const { t } = useTranslation();
+	const { displayWeight, displayLength, weightUnit, lengthUnit } = useUnits();
 	const [showDrawer, setShowDrawer] = useState(false);
 
 	const { data: activeGoals = [] } = useLiveQuery(getActiveGoalsQuery());
@@ -94,7 +96,12 @@ export function GoalsTab() {
 				{activeGoals.map((goal) => {
 					const type = goal.type as GoalType;
 					const currentValue = getCurrentValue(type);
-					const unit = getUnit(type);
+					const unit = getUnit(type, weightUnit, lengthUnit);
+					const displayValue = (v: number | null) => {
+						if (v == null) return null;
+						if (type === "bodyFat") return v;
+						return type === "weight" ? displayWeight(v) : displayLength(v);
+					};
 					const days = daysUntil(goal.deadline);
 					const progress = currentValue != null
 						? computeProgress(goal.startValue, currentValue, goal.targetValue)
@@ -150,12 +157,12 @@ export function GoalsTab() {
 							{/* Values: current → target */}
 							<View className="flex-row items-baseline gap-1 mb-3">
 								<Text className="text-2xl font-bold text-foreground">
-									{currentValue != null ? currentValue : "—"}
+									{displayValue(currentValue) ?? "—"}
 								</Text>
 								<Text className="text-sm" style={{ color: palette.muted.foreground }}>{unit}</Text>
 								<Ionicons name="arrow-forward" size={14} color={palette.muted.foreground} style={{ marginHorizontal: 4 }} />
 								<Text className="text-2xl font-bold" style={{ color: palette.primary.DEFAULT }}>
-									{goal.targetValue}
+									{displayValue(goal.targetValue)}
 								</Text>
 								<Text className="text-sm" style={{ color: palette.muted.foreground }}>{unit}</Text>
 							</View>

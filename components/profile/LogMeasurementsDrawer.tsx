@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { View } from "react-native";
 import { BottomDrawer } from "../BottomDrawer";
 import { Button } from "../Button";
 import { NumberField } from "../NumberField";
 import { insertBodyMeasurements } from "../../lib/profileQueries";
+import { useUnits } from "../../lib/units";
 
 function todayStr(): string {
 	const d = new Date();
@@ -13,16 +14,16 @@ function todayStr(): string {
 
 type MeasurementKey = "bodyFat" | "shoulders" | "chest" | "waist" | "hips" | "neck" | "arms" | "thigh" | "calf";
 
-const FIELDS: { key: MeasurementKey; step: number; unit: string }[] = [
-	{ key: "bodyFat", step: 0.1, unit: "%" },
-	{ key: "shoulders", step: 0.5, unit: "cm" },
-	{ key: "chest", step: 0.5, unit: "cm" },
-	{ key: "waist", step: 0.5, unit: "cm" },
-	{ key: "hips", step: 0.5, unit: "cm" },
-	{ key: "neck", step: 0.5, unit: "cm" },
-	{ key: "arms", step: 0.5, unit: "cm" },
-	{ key: "thigh", step: 0.5, unit: "cm" },
-	{ key: "calf", step: 0.5, unit: "cm" },
+const FIELDS: { key: MeasurementKey; step: number }[] = [
+	{ key: "bodyFat", step: 0.1 },
+	{ key: "shoulders", step: 0.5 },
+	{ key: "chest", step: 0.5 },
+	{ key: "waist", step: 0.5 },
+	{ key: "hips", step: 0.5 },
+	{ key: "neck", step: 0.5 },
+	{ key: "arms", step: 0.5 },
+	{ key: "thigh", step: 0.5 },
+	{ key: "calf", step: 0.5 },
 ];
 
 type Props = {
@@ -33,14 +34,21 @@ type Props = {
 
 export function LogMeasurementsDrawer({ visible, onClose, lastValues }: Props) {
 	const { t } = useTranslation();
-	const [values, setValues] = useState<Record<MeasurementKey, number>>(() => {
+	const { displayLength, toStorageLength, lengthUnit } = useUnits();
+	const buildInitValues = useCallback(() => {
 		const init: Record<string, number> = {};
 		for (const f of FIELDS) {
-			init[f.key] = lastValues[f.key] ?? 0;
+			const raw = lastValues[f.key] ?? 0;
+			init[f.key] = f.key === "bodyFat" ? raw : (raw > 0 ? displayLength(raw) : 0);
 		}
 		return init as Record<MeasurementKey, number>;
-	});
+	}, [lastValues, displayLength]);
+	const [values, setValues] = useState<Record<MeasurementKey, number>>(buildInitValues);
 	const [saving, setSaving] = useState(false);
+
+	useEffect(() => {
+		if (visible) setValues(buildInitValues());
+	}, [visible, buildInitValues]);
 
 	function updateField(key: MeasurementKey, val: number) {
 		setValues((prev) => ({ ...prev, [key]: val }));
@@ -51,7 +59,11 @@ export function LogMeasurementsDrawer({ visible, onClose, lastValues }: Props) {
 		try {
 			const data: Record<string, number | null | string> = { date: todayStr() };
 			for (const f of FIELDS) {
-				data[f.key] = values[f.key] > 0 ? values[f.key] : null;
+				if (values[f.key] <= 0) {
+					data[f.key] = null;
+				} else {
+					data[f.key] = f.key === "bodyFat" ? values[f.key] : toStorageLength(values[f.key]);
+				}
 			}
 			await insertBodyMeasurements(data as Parameters<typeof insertBodyMeasurements>[0]);
 			onClose();
@@ -72,7 +84,7 @@ export function LogMeasurementsDrawer({ visible, onClose, lastValues }: Props) {
 						min={0}
 						max={f.key === "bodyFat" ? 60 : 200}
 						step={f.step}
-						endAdornment={f.unit}
+						endAdornment={f.key === "bodyFat" ? "%" : lengthUnit}
 					/>
 				))}
 				<View className="mt-2">

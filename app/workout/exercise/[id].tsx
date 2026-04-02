@@ -6,7 +6,7 @@ import { useLiveQuery } from "drizzle-orm/expo-sqlite";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import Animated, { FadeIn, useAnimatedStyle, withTiming } from "react-native-reanimated";
 import { Circle, Svg } from "react-native-svg";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -18,9 +18,11 @@ import { EXERCISE_VARIANTS_BY_ID } from "../../../lib/exerciseVariants";
 import { type PrefillSet, getExercisePR, getLastSets } from "../../../lib/workoutHistory";
 import { useSessionTimer } from "../../../lib/useSessionTimer";
 import { palette } from "../../../lib/palette";
+import { useUnits } from "../../../lib/units";
 
 export default function ExerciseScreen() {
 	const { t } = useTranslation();
+	const { displayWeight, toStorageWeight, weightUnit, weightStep } = useUnits();
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const workoutExerciseId = Number(id);
 	const router = useRouter();
@@ -97,18 +99,18 @@ export default function ExerciseScreen() {
 				setReps(initReps);
 				setRepsLeft(first.repsLeft ?? initReps);
 				setRepsRight(first.repsRight ?? initReps);
-				setWeight(initWeight);
+				setWeight(displayWeight(initWeight));
 				setShowWeightInput(!isBodyweight || initWeight > 0);
 			} else {
 				setReps(templateReps);
 				setRepsLeft(templateReps);
 				setRepsRight(templateReps);
-				setWeight(templateWeight);
+				setWeight(displayWeight(templateWeight));
 				setShowWeightInput(!isBodyweight || templateWeight > 0);
 			}
 			setIsPrefillLoading(false);
 		});
-	}, [exerciseRow]);
+	}, [exerciseRow, displayWeight]);
 
 	// Rest countdown
 	useEffect(() => {
@@ -140,10 +142,10 @@ export default function ExerciseScreen() {
 		);
 	}
 
-	const { workoutExercise, sessionExercise } = exerciseRow;
+	const { workoutExercise } = exerciseRow;
 	const totalSets = workoutExercise.prescribedSets;
 	const prescribedReps = workoutExercise.prescribedReps;
-	const restTime = sessionExercise?.restTime ?? 90;
+	const restTime = workoutExercise.prescribedRestTime;
 	const doneSets = completedSets.length;
 	const currentSet = doneSets + 1;
 
@@ -172,7 +174,7 @@ export default function ExerciseScreen() {
 		setReps(p.reps ?? tplReps);
 		setRepsLeft(p.repsLeft ?? p.reps ?? tplReps);
 		setRepsRight(p.repsRight ?? p.reps ?? tplReps);
-		if (p.weight != null) setWeight(p.weight);
+		if (p.weight != null) setWeight(displayWeight(p.weight));
 	}
 
 	async function handleSaveSet() {
@@ -194,11 +196,12 @@ export default function ExerciseScreen() {
 			let insertedSetId: number | null = null;
 
 			await db.transaction(async (tx) => {
+				const storageWeight = weight > 0 ? toStorageWeight(weight) : null;
 				const [inserted] = await tx.insert(workoutSets).values({
 					workoutExerciseId,
 					setIndex: doneSets,
 					...(isUnilateral ? { repsLeft, repsRight } : { reps }),
-					weight: weight > 0 ? weight : null,
+					weight: storageWeight,
 					completedAt: new Date().toISOString(),
 				}).returning({ id: workoutSets.id });
 				insertedSetId = inserted.id;
@@ -231,16 +234,19 @@ export default function ExerciseScreen() {
 
 			Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-			// PR detection
-			const setWeight = weight > 0 ? weight : null;
-			if (setWeight != null && (prMaxRef.current == null || setWeight > prMaxRef.current)) {
-				prMaxRef.current = setWeight;
-				setNewPRWeight(setWeight);
+			// PR detection (compare in kg)
+			const setWeightKg = weight > 0 ? toStorageWeight(weight) : null;
+			if (setWeightKg != null && (prMaxRef.current == null || setWeightKg > prMaxRef.current)) {
+				prMaxRef.current = setWeightKg;
+				setNewPRWeight(setWeightKg);
 				if (prTimerRef.current) clearTimeout(prTimerRef.current);
 				prTimerRef.current = setTimeout(() => setNewPRWeight(null), 3000);
 			}
 
 			if (isLastSet) {
+				// Clear any pending undo — the exercise/session is now finalized
+				if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+				setUndoSetId(null);
 				// Brief delay so the user sees the stepper fully green
 				await new Promise((resolve) => setTimeout(resolve, 350));
 				if (sessionCompleted) {
@@ -268,10 +274,12 @@ export default function ExerciseScreen() {
 
 				setNewPRWeight(null);
 				setUnilateralSide("left");
-				setRestNextSet(doneSets + 2);
-				setRestTotalTime(restTime);
-				setRestSecondsLeft(restTime);
-				setIsResting(true);
+				if (restTime > 0) {
+					setRestNextSet(doneSets + 2);
+					setRestTotalTime(restTime);
+					setRestSecondsLeft(restTime);
+					setIsResting(true);
+				}
 			}
 		} finally {
 			setIsSaving(false);
@@ -296,6 +304,57 @@ export default function ExerciseScreen() {
 			</Text>
 		</View>
 	);
+
+	const isCompleted = doneSets >= totalSets;
+
+	if (isCompleted) {
+		return (
+			<SafeAreaView className="flex-1 bg-background" edges={["top"]}>
+				<ScreenHeader
+					title={name}
+					subtitle={t("workout.setProgress", { current: totalSets, total: totalSets })}
+					onBack={() => router.back()}
+					action={timerPill}
+				/>
+				<ScrollView className="flex-1 px-6" contentContainerStyle={{ paddingTop: 16, paddingBottom: 32, gap: 8 }}>
+					{/* All-green stepper */}
+					<View className="flex-row gap-2 mb-4">
+						{Array.from({ length: totalSets }, (_, i) => (
+							<AnimatedSegment key={`set-${i}`} state="done" />
+						))}
+					</View>
+					{completedSets.map((s) => (
+						<View
+							key={s.id}
+							className="flex-row items-center justify-between rounded-2xl px-4 py-3"
+							style={{ backgroundColor: palette.card.DEFAULT }}
+						>
+							<Text className="text-sm font-semibold text-foreground">
+								Set {s.setIndex + 1}
+							</Text>
+							<View className="flex-row items-center gap-3">
+								{s.reps != null && (
+									<Text className="text-sm" style={{ color: palette.muted.foreground }}>
+										{s.reps} reps
+									</Text>
+								)}
+								{s.repsLeft != null && s.repsRight != null && (
+									<Text className="text-sm" style={{ color: palette.muted.foreground }}>
+										{s.repsLeft}L / {s.repsRight}R
+									</Text>
+								)}
+								{s.weight != null && (
+									<Text className="text-sm font-semibold" style={{ color: palette.primary.DEFAULT }}>
+										{displayWeight(s.weight)} {weightUnit}
+									</Text>
+								)}
+							</View>
+						</View>
+					))}
+				</ScrollView>
+			</SafeAreaView>
+		);
+	}
 
 	return (
 		<SafeAreaView className="flex-1 bg-background" edges={["top"]}>
@@ -387,10 +446,11 @@ export default function ExerciseScreen() {
 
 						{showWeightInput ? (
 							<WeightCard
-								label={t("workout.weightKg")}
+								label={`${t("workout.weight")} (${weightUnit})`}
 								value={weight}
-								onDecrement={() => setWeight((v) => Math.max(0, Math.round((v - 2.5) * 10) / 10))}
-								onIncrement={() => setWeight((v) => Math.round((v + 2.5) * 10) / 10)}
+								step={weightStep}
+								onDecrement={() => setWeight((v) => Math.max(0, Math.round((v - weightStep) * 10) / 10))}
+								onIncrement={() => setWeight((v) => Math.round((v + weightStep) * 10) / 10)}
 								onQuickChange={(delta) =>
 									setWeight((v) => Math.max(0, Math.round((v + delta) * 10) / 10))
 								}
@@ -411,7 +471,7 @@ export default function ExerciseScreen() {
 
 					{/* PR badge */}
 					{newPRWeight != null && (
-						<PRBadge label={t("pr.newRecord", { weight: newPRWeight })} />
+						<PRBadge label={t("pr.newRecord", { weight: displayWeight(newPRWeight), unit: weightUnit })} />
 					)}
 
 					{/* Undo toast */}
@@ -444,6 +504,11 @@ export default function ExerciseScreen() {
 							onPress={handleSaveSet}
 							loading={isSaving}
 						/>
+						{isUnilateral && unilateralSide === "left" && (
+							<Text className="text-xs text-center mt-2" style={{ color: palette.muted.foreground }}>
+								{t("workout.thenRightSide")}
+							</Text>
+						)}
 					</View>
 			</View>
 
@@ -612,14 +677,15 @@ function PRBadge({ label }: { label: string }) {
 type WeightCardProps = {
 	label: string;
 	value: number;
+	step: number;
 	onDecrement: () => void;
 	onIncrement: () => void;
 	onQuickChange: (delta: number) => void;
 	onDismiss: () => void;
 };
 
-function WeightCard({ label, value, onDecrement, onIncrement, onQuickChange, onDismiss }: WeightCardProps) {
-	const quickDeltas = [-5, -2.5, 2.5, 5];
+function WeightCard({ label, value, step, onDecrement, onIncrement, onQuickChange, onDismiss }: WeightCardProps) {
+	const quickDeltas = [-step * 2, -step, step, step * 2];
 	return (
 		<View className="rounded-2xl px-6 py-5" style={{ backgroundColor: palette.card.DEFAULT }}>
 			<Text
@@ -638,13 +704,16 @@ function WeightCard({ label, value, onDecrement, onIncrement, onQuickChange, onD
 			<View className="flex-row gap-2 mt-4">
 				{quickDeltas.map((delta) => {
 					const isPositive = delta > 0;
+					const isDisabled = !isPositive && value + delta < 0;
 					return (
 						<Pressable
 							key={delta}
 							onPress={() => onQuickChange(delta)}
+							disabled={isDisabled}
 							className="flex-1 items-center justify-center rounded-xl py-2 active:opacity-60"
 							style={{
 								backgroundColor: isPositive ? `${palette.primary.DEFAULT}20` : palette.muted.DEFAULT,
+								opacity: isDisabled ? 0.3 : 1,
 							}}
 						>
 							<Text

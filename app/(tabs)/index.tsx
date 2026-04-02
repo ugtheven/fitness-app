@@ -102,7 +102,9 @@ export default function HomeScreen() {
 		setLaunchingSessionId(sessionId);
 		try {
 			const workoutSessionId = await db.transaction(async (tx) => {
-				// Delete ALL interrupted sessions (not resumed — always start fresh)
+				// Design choice: in-progress sessions are NOT resumable. Starting a new
+				// session destroys any interrupted one (workoutExercises + workoutSets
+				// are cascade-deleted). The user is warned via Alert before reaching here.
 				await tx.delete(workoutSessions)
 					.where(eq(workoutSessions.status, "in_progress"));
 
@@ -113,7 +115,7 @@ export default function HomeScreen() {
 					.where(eq(sessionExercises.sessionId, sessionId))
 					.orderBy(sessionExercises.order);
 
-				if (exercises.length === 0) return null;
+				if (exercises.length === 0) return "empty" as const;
 
 				const nowDate = new Date();
 				const now = nowDate.toISOString();
@@ -132,6 +134,7 @@ export default function HomeScreen() {
 						prescribedSets: ex.sets,
 						prescribedReps: ex.reps,
 						prescribedWeight: ex.defaultWeight ?? null,
+						prescribedRestTime: ex.restTime,
 						status: "pending" as const,
 					}))
 				);
@@ -139,6 +142,10 @@ export default function HomeScreen() {
 				return workoutSession.id;
 			});
 
+			if (workoutSessionId === "empty") {
+				Alert.alert(t("home.emptySessionTitle"), t("home.emptySessionMessage"));
+				return;
+			}
 			if (workoutSessionId == null) return;
 
 			setDrawerVisible(false);

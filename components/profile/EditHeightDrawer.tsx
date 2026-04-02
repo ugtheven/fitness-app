@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { View } from "react-native";
 import { BottomDrawer } from "../BottomDrawer";
 import { Button } from "../Button";
 import { NumberField } from "../NumberField";
 import { upsertHeight } from "../../lib/profileQueries";
+import { useUnits } from "../../lib/units";
 
 type Props = {
 	visible: boolean;
@@ -14,13 +15,23 @@ type Props = {
 
 export function EditHeightDrawer({ visible, onClose, currentHeight }: Props) {
 	const { t } = useTranslation();
-	const [height, setHeight] = useState(currentHeight || 170);
+	const { displayLength, toStorageLength, lengthUnit, system, heightMin, heightMax, heightStep } = useUnits();
+	const defaultHeightCm = currentHeight || 170;
+	const [height, setHeight] = useState(() => system === "imperial" ? displayLength(defaultHeightCm) : defaultHeightCm);
 	const [saving, setSaving] = useState(false);
+
+	useEffect(() => {
+		if (visible) {
+			const cm = currentHeight || 170;
+			setHeight(system === "imperial" ? displayLength(cm) : cm);
+		}
+	}, [visible, currentHeight, system, displayLength]);
 
 	async function handleSave() {
 		setSaving(true);
 		try {
-			await upsertHeight(height);
+			const cm = system === "imperial" ? toStorageLength(height) : height;
+			await upsertHeight(cm);
 			onClose();
 		} finally {
 			setSaving(false);
@@ -31,13 +42,13 @@ export function EditHeightDrawer({ visible, onClose, currentHeight }: Props) {
 		<BottomDrawer visible={visible} onClose={onClose} title={t("profile.editHeight")}>
 			<View className="gap-4">
 				<NumberField
-					label={t("profile.heightCm")}
+					label={t("profile.height")}
 					value={height}
 					onValueChange={setHeight}
-					min={100}
-					max={250}
-					step={1}
-					endAdornment="cm"
+					min={heightMin}
+					max={heightMax}
+					step={heightStep}
+					endAdornment={lengthUnit}
 				/>
 				<Button label={t("profile.save")} onPress={handleSave} loading={saving} fullWidth />
 			</View>

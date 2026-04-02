@@ -4,17 +4,19 @@ import { useLiveQuery } from "drizzle-orm/expo-sqlite";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Text, View } from "react-native";
+import { ActivityIndicator, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "../../../components/Button";
 import { db } from "../../../db";
 import { sessions, workoutExercises, workoutSessions, workoutSets } from "../../../db/schema";
 import { EXERCISE_VARIANTS_BY_ID } from "../../../lib/exerciseVariants";
 import { palette } from "../../../lib/palette";
+import { useUnits } from "../../../lib/units";
 import { getSessionPRs } from "../../../lib/workoutHistory";
 
 export default function WorkoutSummaryScreen() {
 	const { t } = useTranslation();
+	const { displayWeight, weightUnit } = useUnits();
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const workoutSessionId = Number(id);
 	const router = useRouter();
@@ -55,9 +57,13 @@ export default function WorkoutSummaryScreen() {
 	);
 
 	const [prs, setPrs] = useState<Awaited<ReturnType<typeof getSessionPRs>>>([]);
+	const [prsLoading, setPrsLoading] = useState(true);
 
 	useEffect(() => {
-		getSessionPRs(workoutSessionId).then(setPrs);
+		getSessionPRs(workoutSessionId).then((result) => {
+			setPrs(result);
+			setPrsLoading(false);
+		});
 	}, [workoutSessionId]);
 
 	if (!workoutSession) return null;
@@ -77,7 +83,7 @@ export default function WorkoutSummaryScreen() {
 	const completedExercises = exerciseStats?.[0]?.completed ?? 0;
 	const totalSets = setStats?.[0]?.total ?? 0;
 	const totalVolume = setStats?.[0]?.volume ?? 0;
-	const volumeLabel = totalVolume > 0 ? `${Math.round(totalVolume)} kg` : "—";
+	const volumeLabel = totalVolume > 0 ? `${Math.round(displayWeight(totalVolume))} ${weightUnit}` : "—";
 
 	return (
 		<SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
@@ -120,7 +126,9 @@ export default function WorkoutSummaryScreen() {
 				</View>
 
 				{/* PRs beaten */}
-				{prs.length > 0 && (
+				{prsLoading ? (
+					<ActivityIndicator size="small" color={palette.primary.DEFAULT} />
+				) : prs.length === 0 ? null : (
 					<View className="w-full gap-2">
 						<View className="flex-row items-center gap-2 justify-center">
 							<Ionicons name="flash" size={16} color={palette.primary.DEFAULT} />
@@ -142,11 +150,11 @@ export default function WorkoutSummaryScreen() {
 									</Text>
 									<View className="items-end">
 										<Text className="text-sm font-bold" style={{ color: palette.primary.DEFAULT }}>
-											{pr.newWeight} kg
+											{displayWeight(pr.newWeight)} {weightUnit}
 										</Text>
 										<Text className="text-xs" style={{ color: palette.muted.foreground }}>
 											{pr.previousWeight != null
-												? t("pr.previousRecord", { weight: pr.previousWeight })
+												? t("pr.previousRecord", { weight: displayWeight(pr.previousWeight), unit: weightUnit })
 												: t("pr.firstRecord")}
 										</Text>
 									</View>

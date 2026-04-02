@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Text, View } from "react-native";
 import Svg, { Circle, Line as SvgLine, Path, Text as SvgText } from "react-native-svg";
 import { palette } from "../../lib/palette";
+import { useUnits } from "../../lib/units";
 
 type DataPoint = { date: string; weightKg: number };
 type Props = { data: DataPoint[] };
@@ -41,6 +42,7 @@ export function WeightChart({ data }: Props) {
 
 function ChartContent({ data }: { data: DataPoint[] }) {
 	const [width, setWidth] = useState(0);
+	const { displayWeight, weightUnit } = useUnits();
 
 	const chart = useMemo(() => {
 		if (width === 0 || data.length === 0) return null;
@@ -49,7 +51,7 @@ function ChartContent({ data }: { data: DataPoint[] }) {
 		const firstMs = new Date(sorted[0].date).getTime();
 		const points = sorted.map((d) => ({
 			x: (new Date(d.date).getTime() - firstMs) / 86400000,
-			y: d.weightKg,
+			y: displayWeight(d.weightKg),
 			date: d.date,
 		}));
 
@@ -92,7 +94,7 @@ function ChartContent({ data }: { data: DataPoint[] }) {
 		const latestPoint = points[points.length - 1];
 
 		return { dataPath, points, yTicks, xTicks, toX, toY, latestPoint };
-	}, [data, width]);
+	}, [data, width, displayWeight]);
 
 	if (!chart) {
 		return <View style={{ flex: 1 }} onLayout={(e) => setWidth(e.nativeEvent.layout.width)} />;
@@ -173,7 +175,7 @@ function ChartContent({ data }: { data: DataPoint[] }) {
 						fontWeight="bold"
 						textAnchor="middle"
 					>
-						{chart.latestPoint.y} kg
+						{chart.latestPoint.y} {weightUnit}
 					</SvgText>
 				)}
 			</Svg>

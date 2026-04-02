@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Text, View } from "react-native";
 import type { MuscleGroup } from "../lib/exercises";
 import { palette } from "../lib/palette";
+import { useUnits } from "../lib/units";
 import { ChipList } from "./ChipList";
 import { IconButton } from "./IconButton";
 
@@ -30,6 +31,7 @@ export function ExerciseCard({
 	onDelete,
 }: ExerciseCardProps) {
 	const { t } = useTranslation();
+	const { displayWeight, weightUnit } = useUnits();
 
 	return (
 		<View
@@ -41,7 +43,7 @@ export function ExerciseCard({
 				<Text className="text-base font-semibold text-foreground">{name}</Text>
 				<Text className="mt-0.5 text-xs text-muted-foreground">
 					{sets} sets · {reps} reps
-					{defaultWeight ? ` · ${defaultWeight} kg` : ""}
+					{defaultWeight ? ` · ${displayWeight(defaultWeight)} ${weightUnit}` : ""}
 					{` · ${restTime}s rest`}
 				</Text>
 				<View className="mt-2" style={{ minHeight: 26 }}>

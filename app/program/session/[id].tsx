@@ -21,6 +21,7 @@ import { EXERCISE_VARIANTS, EXERCISE_VARIANTS_BY_ID } from "../../../lib/exercis
 import { EXERCISE_BASES_BY_ID } from "../../../lib/exerciseBases";
 import type { Equipment, ExerciseVariant } from "../../../lib/exerciseTypes";
 import { palette } from "../../../lib/palette";
+import { useUnits } from "../../../lib/units";
 
 type ExerciseRow = typeof sessionExercises.$inferSelect;
 
@@ -36,6 +37,7 @@ const ALL_EQUIPMENT: Equipment[] = ["bodyweight", "dumbbell", "barbell", "cable"
 
 export default function SessionScreen() {
 	const { t } = useTranslation();
+	const { weightUnit, displayWeight, toStorageWeight } = useUnits();
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const sessionId = Number(id);
 
@@ -81,11 +83,11 @@ export default function SessionScreen() {
 		setIsUnilateral(item.isUnilateral);
 		setSets(item.sets);
 		setReps(item.reps);
-		setWeight(item.defaultWeight ?? 0);
+		setWeight(item.defaultWeight != null ? displayWeight(item.defaultWeight) : 0);
 		setRestTime(item.restTime);
 		setStep(2);
 		setDrawerOpen(true);
-	}, []);
+	}, [displayWeight]);
 
 	const confirmDelete = useCallback((itemId: number) => {
 		Alert.alert(
@@ -122,7 +124,7 @@ export default function SessionScreen() {
 				order: nextOrder,
 				sets,
 				reps,
-				defaultWeight: weight > 0 ? weight : null,
+				defaultWeight: weight > 0 ? toStorageWeight(weight) : null,
 				restTime,
 			});
 			setDrawerOpen(false);
@@ -136,7 +138,7 @@ export default function SessionScreen() {
 		try {
 			await db
 				.update(sessionExercises)
-				.set({ isUnilateral, sets, reps, defaultWeight: weight > 0 ? weight : null, restTime })
+				.set({ isUnilateral, sets, reps, defaultWeight: weight > 0 ? toStorageWeight(weight) : null, restTime })
 				.where(eq(sessionExercises.id, editingId));
 			setDrawerOpen(false);
 		} catch (e) {
@@ -372,7 +374,7 @@ export default function SessionScreen() {
 							onValueChange={setWeight}
 							min={0}
 							step={2.5}
-							endAdornment="kg"
+							endAdornment={weightUnit}
 						/>
 						<NumberField
 							label={t("exercises.rest")}

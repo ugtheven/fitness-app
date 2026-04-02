@@ -8,6 +8,7 @@ import type { Equipment } from "../../lib/exerciseTypes";
 import { EXERCISE_VARIANTS_BY_ID } from "../../lib/exerciseVariants";
 import { palette } from "../../lib/palette";
 import { getAllExercisePRsQuery } from "../../lib/profileQueries";
+import { useUnits } from "../../lib/units";
 
 function equipmentIcon(equipment: Equipment): keyof typeof Ionicons.glyphMap {
 	switch (equipment) {
@@ -24,6 +25,7 @@ function equipmentIcon(equipment: Equipment): keyof typeof Ionicons.glyphMap {
 
 export function RecordsTab() {
 	const { t } = useTranslation();
+	const { displayWeight, weightUnit } = useUnits();
 	const { data: prs = [] } = useLiveQuery(getAllExercisePRsQuery());
 
 	const grouped = useMemo(() => {
@@ -101,9 +103,9 @@ export function RecordsTab() {
 							<View className="items-end">
 								<View className="flex-row items-baseline">
 									<Text className="text-xl font-bold text-foreground">
-										{ex.maxWeight}
+										{displayWeight(ex.maxWeight)}
 									</Text>
-									<Text className="text-xs ml-1" style={{ color: palette.muted.foreground }}>kg</Text>
+									<Text className="text-xs ml-1" style={{ color: palette.muted.foreground }}>{weightUnit}</Text>
 								</View>
 								<View className="flex-row items-center gap-1 mt-0.5">
 									<Ionicons name="flash" size={10} color={palette.primary.DEFAULT} />

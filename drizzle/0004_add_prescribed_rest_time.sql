@@ -1,0 +1,1 @@
+ALTER TABLE workout_exercises ADD COLUMN prescribed_rest_time INTEGER NOT NULL DEFAULT 90;
