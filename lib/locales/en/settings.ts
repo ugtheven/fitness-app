@@ -9,7 +9,7 @@ export default {
 		home: "Home",
 		activity: "Activity",
 		programs: "Programs",
-		settings: "Settings",
+		profile: "Profile",
 	},
 	activity: {
 		title: "Activity",

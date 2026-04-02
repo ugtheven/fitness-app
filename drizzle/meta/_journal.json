@@ -8,6 +8,27 @@
       "when": 1774777000178,
       "tag": "0000_full_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1774779000000,
+      "tag": "0001_profile_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1774781000000,
+      "tag": "0002_goals",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1774783000000,
+      "tag": "0003_add_indexes",
+      "breakpoints": true
     }
   ]
 }

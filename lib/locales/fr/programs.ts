@@ -49,6 +49,17 @@ workout: {
 	validateLeft: "Valider côté gauche",
 	weightKg: "POIDS · KG",
 	target: "Objectif : {{value}}",
+	setLogged: "Série enregistrée",
+	undo: "Annuler",
+},
+home: {
+	inProgressTitle: "Séance en cours",
+	inProgressMessage: "Tu as une séance en cours. En lancer une nouvelle supprimera la précédente.",
+	startNew: "Nouvelle séance",
+	emptyTitle: "Aucun programme actif",
+	emptyHint: "Crée un programme pour commencer à t'entraîner.",
+	createProgram: "Créer un programme",
+	nextSession: "Suivante",
 },
 pr: {
 	newRecord: "Nouveau record ! {{weight}} kg",

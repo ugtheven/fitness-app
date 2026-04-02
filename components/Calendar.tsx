@@ -149,7 +149,10 @@ export function Calendar({ selectedDate, onSelectDate, workoutDates, displayMont
 									style={[
 										{ width: 34, height: 34, borderRadius: 10 },
 										isSelected && { backgroundColor: palette.muted.DEFAULT },
-										isToday && !isSelected && { backgroundColor: palette.muted.DEFAULT },
+										isToday && !isSelected && {
+											borderWidth: 1.5,
+											borderColor: palette.primary.DEFAULT,
+										},
 									]}
 								>
 									<Text

@@ -15,7 +15,7 @@ const TAB_ICONS: Record<
 	index: { active: "home", inactive: "home-outline" },
 	activity: { active: "calendar", inactive: "calendar-outline" },
 	programs: { active: "barbell", inactive: "barbell-outline" },
-	settings: { active: "settings", inactive: "settings-outline" },
+	profile: { active: "person", inactive: "person-outline" },
 };
 
 const LENS_INSET = 6;

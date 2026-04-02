@@ -1,4 +1,4 @@
-import { int, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { int, real, sqliteTable, text, unique, uniqueIndex, index } from "drizzle-orm/sqlite-core";
 
 export const programs = sqliteTable("programs", {
 	id: int("id").primaryKey({ autoIncrement: true }),
@@ -34,20 +34,24 @@ export const sessionExercises = sqliteTable("session_exercises", {
 	restTime: int("rest_time").notNull().default(90),
 });
 
-export const workoutSessions = sqliteTable("workout_sessions", {
-	id: int("id").primaryKey({ autoIncrement: true }),
-	// Nullable: set null si la session de programme est supprimée (historique conservé)
-	sessionId: int("session_id").references(() => sessions.id, { onDelete: "set null" }),
-	// Snapshot: set null si le programme est supprimé, mais l'historique reste consultable par programme
-	programId: int("program_id").references(() => programs.id, { onDelete: "set null" }),
-	startedAt: text("started_at").notNull(),
-	endedAt: text("ended_at"),
-	/** Local date YYYY-MM-DD — used for calendar, stats, streaks (timezone-safe) */
-	date: text("date").notNull(),
-	status: text("status", { enum: ["in_progress", "completed"] })
-		.notNull()
-		.default("in_progress"),
-});
+export const workoutSessions = sqliteTable(
+	"workout_sessions",
+	{
+		id: int("id").primaryKey({ autoIncrement: true }),
+		// Nullable: set null si la session de programme est supprimée (historique conservé)
+		sessionId: int("session_id").references(() => sessions.id, { onDelete: "set null" }),
+		// Snapshot: set null si le programme est supprimé, mais l'historique reste consultable par programme
+		programId: int("program_id").references(() => programs.id, { onDelete: "set null" }),
+		startedAt: text("started_at").notNull(),
+		endedAt: text("ended_at"),
+		/** Local date YYYY-MM-DD — used for calendar, stats, streaks (timezone-safe) */
+		date: text("date").notNull(),
+		status: text("status", { enum: ["in_progress", "completed"] })
+			.notNull()
+			.default("in_progress"),
+	},
+	(t) => [index("workout_sessions_date_idx").on(t.date)],
+);
 
 export const workoutExercises = sqliteTable(
 	"workout_exercises",
@@ -71,6 +75,7 @@ export const workoutExercises = sqliteTable(
 			.notNull()
 			.default("pending"),
 	},
+	(t) => [index("workout_exercises_variant_idx").on(t.exerciseVariantId)],
 );
 
 export const workoutSets = sqliteTable(
@@ -91,3 +96,60 @@ export const workoutSets = sqliteTable(
 		uniqueIndex("workout_sets_exercise_set_idx").on(t.workoutExerciseId, t.setIndex),
 	],
 );
+
+// ─── Profile ────────────────────────────────────────────────────────────────
+
+export const userProfile = sqliteTable("user_profile", {
+	id: int("id").primaryKey({ autoIncrement: true }),
+	heightCm: real("height_cm"),
+	updatedAt: text("updated_at")
+		.$defaultFn(() => new Date().toISOString())
+		.$onUpdateFn(() => new Date().toISOString()),
+});
+
+export const weightLogs = sqliteTable(
+	"weight_logs",
+	{
+		id: int("id").primaryKey({ autoIncrement: true }),
+		date: text("date").notNull(),
+		weightKg: real("weight_kg").notNull(),
+		createdAt: text("created_at").$defaultFn(() => new Date().toISOString()),
+	},
+	(t) => [uniqueIndex("weight_logs_date_idx").on(t.date)],
+);
+
+export const bodyMeasurements = sqliteTable(
+	"body_measurements",
+	{
+		id: int("id").primaryKey({ autoIncrement: true }),
+		date: text("date").notNull(),
+		bodyFat: real("body_fat"),
+		shoulders: real("shoulders"),
+		chest: real("chest"),
+		waist: real("waist"),
+		hips: real("hips"),
+		neck: real("neck"),
+		arms: real("arms"),
+		thigh: real("thigh"),
+		calf: real("calf"),
+		createdAt: text("created_at").$defaultFn(() => new Date().toISOString()),
+	},
+	(t) => [uniqueIndex("body_measurements_date_idx").on(t.date)],
+);
+
+export const goals = sqliteTable("goals", {
+	id: int("id").primaryKey({ autoIncrement: true }),
+	type: text("type", {
+		enum: ["weight", "bodyFat", "shoulders", "chest", "waist", "hips", "neck", "arms", "thigh", "calf"],
+	}).notNull(),
+	targetValue: real("target_value").notNull(),
+	startValue: real("start_value").notNull(),
+	deadline: text("deadline").notNull(),
+	status: text("status", { enum: ["active", "achieved", "abandoned"] })
+		.notNull()
+		.default("active"),
+	createdAt: text("created_at").$defaultFn(() => new Date().toISOString()),
+	updatedAt: text("updated_at")
+		.$defaultFn(() => new Date().toISOString())
+		.$onUpdateFn(() => new Date().toISOString()),
+});

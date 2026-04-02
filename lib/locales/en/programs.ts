@@ -49,6 +49,17 @@ workout: {
 	validateLeft: "Confirm left side",
 	weightKg: "WEIGHT · KG",
 	target: "Target: {{value}}",
+	setLogged: "Set logged",
+	undo: "Undo",
+},
+home: {
+	inProgressTitle: "Workout in progress",
+	inProgressMessage: "You have a workout in progress. Starting a new session will discard it.",
+	startNew: "Start new",
+	emptyTitle: "No active program",
+	emptyHint: "Create a program to start training.",
+	createProgram: "Create a program",
+	nextSession: "Next",
 },
 pr: {
 	newRecord: "New PR! {{weight}} kg",

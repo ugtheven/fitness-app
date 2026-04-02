@@ -38,9 +38,11 @@ export default function ExerciseScreen() {
 	const [restNextSet, setRestNextSet] = useState(1);
 	const [isPrefillLoading, setIsPrefillLoading] = useState(true);
 	const [newPRWeight, setNewPRWeight] = useState<number | null>(null);
+	const [undoSetId, setUndoSetId] = useState<number | null>(null);
 
 	const restIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 	const prTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const hasInitializedRef = useRef(false);
 	const prefillSetsRef = useRef<PrefillSet[]>([]);
 	const prMaxRef = useRef<number | null>(null);
@@ -189,15 +191,17 @@ export default function ExerciseScreen() {
 			const sessionWorkoutId = workoutExercise.workoutSessionId;
 			const isLastSet = nextDoneCount >= totalSets;
 			let sessionCompleted = false;
+			let insertedSetId: number | null = null;
 
 			await db.transaction(async (tx) => {
-				await tx.insert(workoutSets).values({
+				const [inserted] = await tx.insert(workoutSets).values({
 					workoutExerciseId,
 					setIndex: doneSets,
 					...(isUnilateral ? { repsLeft, repsRight } : { reps }),
 					weight: weight > 0 ? weight : null,
 					completedAt: new Date().toISOString(),
-				});
+				}).returning({ id: workoutSets.id });
+				insertedSetId = inserted.id;
 
 				if (isLastSet) {
 					await tx
@@ -245,6 +249,13 @@ export default function ExerciseScreen() {
 					router.back();
 				}
 			} else {
+				// Show undo toast for 5 seconds
+				if (insertedSetId != null) {
+					if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+					setUndoSetId(insertedSetId);
+					undoTimerRef.current = setTimeout(() => setUndoSetId(null), 5000);
+				}
+
 				// Prefill next set values from history
 				const nextSetIndex = doneSets + 1;
 				const prefillSets = prefillSetsRef.current;
@@ -265,6 +276,14 @@ export default function ExerciseScreen() {
 		} finally {
 			setIsSaving(false);
 		}
+	}
+
+	async function handleUndo() {
+		if (undoSetId == null) return;
+		await db.delete(workoutSets).where(eq(workoutSets.id, undoSetId));
+		if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+		setUndoSetId(null);
+		Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
 	}
 
 	const timerPill = (
@@ -393,6 +412,24 @@ export default function ExerciseScreen() {
 					{/* PR badge */}
 					{newPRWeight != null && (
 						<PRBadge label={t("pr.newRecord", { weight: newPRWeight })} />
+					)}
+
+					{/* Undo toast */}
+					{undoSetId != null && (
+						<Animated.View
+							entering={FadeIn.duration(200)}
+							className="mx-6 rounded-2xl px-4 py-3 flex-row items-center justify-between"
+							style={{ backgroundColor: palette.muted.DEFAULT }}
+						>
+							<Text className="text-sm" style={{ color: palette.foreground }}>
+								{t("workout.setLogged")}
+							</Text>
+							<Pressable onPress={handleUndo} className="active:opacity-70">
+								<Text className="text-sm font-bold" style={{ color: palette.primary.DEFAULT }}>
+									{t("workout.undo")}
+								</Text>
+							</Pressable>
+						</Animated.View>
 					)}
 
 					{/* Bouton fixe en bas */}
