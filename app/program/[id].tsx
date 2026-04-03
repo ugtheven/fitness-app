@@ -164,7 +164,7 @@ export default function ProgramScreen() {
 						returnKeyType="done"
 						onSubmitEditing={handleCreate}
 					/>
-					<Button variant="glow" fullWidth label={t("common.create")} onPress={handleCreate} />
+					<Button variant="glow" fullWidth label={t("common.create")} onPress={handleCreate} disabled={!sessionName.trim()} />
 				</View>
 			</BottomDrawer>
 		</SafeAreaView>

@@ -28,7 +28,9 @@ export default function RootLayout() {
 	useEffect(() => {
 		console.log("[migrations]", { success, error: error?.message });
 		if (success) {
-			seedWeightLogs().then(() => console.log("[seed] weight logs done"));
+			seedWeightLogs()
+				.then(() => console.log("[seed] done"))
+				.catch((e) => console.error("[seed] error", e));
 		}
 	}, [success, error]);
 

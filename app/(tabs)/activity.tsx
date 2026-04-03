@@ -166,7 +166,7 @@ export default function ActivityScreen() {
 							<Text className="text-2xl font-bold text-foreground">
 								{monthStats.volume}
 							</Text>
-							<Text className="text-sm ml-1" style={{ color: palette.muted.foreground }}>t</Text>
+							<Text className="text-sm ml-1" style={{ color: palette.muted.foreground }}>tons</Text>
 						</View>
 					</View>
 					<View className="flex-1 px-4 py-3" style={{ backgroundColor: palette.card.DEFAULT, borderRadius: radius.lg }}>
@@ -177,7 +177,7 @@ export default function ActivityScreen() {
 							<Text className="text-2xl font-bold text-foreground">
 								{monthStats.hours}
 							</Text>
-							<Text className="text-sm ml-1" style={{ color: palette.muted.foreground }}>h</Text>
+							<Text className="text-sm ml-1" style={{ color: palette.muted.foreground }}>hrs</Text>
 						</View>
 					</View>
 				</View>

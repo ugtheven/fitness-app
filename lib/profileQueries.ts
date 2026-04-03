@@ -24,6 +24,10 @@ export function getLatestMeasurementsQuery() {
 	return db.select().from(bodyMeasurements).orderBy(desc(bodyMeasurements.date)).limit(1);
 }
 
+export function getMeasurementHistoryQuery() {
+	return db.select().from(bodyMeasurements).orderBy(bodyMeasurements.date);
+}
+
 export function getAllExercisePRsQuery() {
 	return db
 		.select({
@@ -90,6 +94,20 @@ export async function insertBodyMeasurements(data: {
 			target: bodyMeasurements.date,
 			set: { ...fields, createdAt: new Date().toISOString() },
 		});
+}
+
+export async function updateMeasurementField(date: string, key: string, value: number) {
+	await db
+		.update(bodyMeasurements)
+		.set({ [key]: value })
+		.where(eq(bodyMeasurements.date, date));
+}
+
+export async function deleteMeasurementField(date: string, key: string) {
+	await db
+		.update(bodyMeasurements)
+		.set({ [key]: null })
+		.where(eq(bodyMeasurements.date, date));
 }
 
 type GoalType = "weight" | "bodyFat" | "shoulders" | "chest" | "waist" | "hips" | "neck" | "arms" | "thigh" | "calf";

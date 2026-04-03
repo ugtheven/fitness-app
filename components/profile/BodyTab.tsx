@@ -1,21 +1,21 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLiveQuery } from "drizzle-orm/expo-sqlite";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { Button } from "../Button";
 import { palette } from "../../lib/palette";
 import { radius } from "../../lib/tokens";
 import {
-	getLatestMeasurementsQuery,
+	getMeasurementHistoryQuery,
 	getTwoLatestWeightsQuery,
 	getUserProfileQuery,
 	getWeightLogsQuery,
 } from "../../lib/profileQueries";
 import { EditHeightDrawer } from "./EditHeightDrawer";
 import { useUnits } from "../../lib/units";
-import { LogMeasurementsDrawer } from "./LogMeasurementsDrawer";
 import { LogWeightDrawer } from "./LogWeightDrawer";
+import { MeasurementDetailDrawer } from "./MeasurementDetailDrawer";
 import { WeightChart } from "./WeightChart";
 
 type MeasurementKey = "bodyFat" | "shoulders" | "chest" | "waist" | "hips" | "neck" | "arms" | "thigh" | "calf";
@@ -34,17 +34,40 @@ export function BodyTab() {
 	const { data: twoWeights = [] } = useLiveQuery(getTwoLatestWeightsQuery());
 	const { data: weightLogs = [] } = useLiveQuery(getWeightLogsQuery());
 	const { data: profileRows = [] } = useLiveQuery(getUserProfileQuery());
-	const { data: measurementRows = [] } = useLiveQuery(getLatestMeasurementsQuery());
+	const { data: allMeasurementRows = [] } = useLiveQuery(getMeasurementHistoryQuery());
 
 	const [showWeightDrawer, setShowWeightDrawer] = useState(false);
-	const [showMeasurementsDrawer, setShowMeasurementsDrawer] = useState(false);
 	const [showHeightDrawer, setShowHeightDrawer] = useState(false);
+	const [selectedMeasurement, setSelectedMeasurement] = useState<MeasurementKey | null>(null);
 
 	const latestWeight = twoWeights[0]?.weightKg ?? null;
 	const previousWeight = twoWeights[1]?.weightKg ?? null;
 	const weightDelta = latestWeight != null && previousWeight != null ? latestWeight - previousWeight : null;
 	const heightCm = profileRows[0]?.heightCm ?? null;
-	const latestMeasurements = measurementRows[0] ?? null;
+
+	// For each measurement key, find the latest and previous non-null values (rows sorted ASC by date)
+	const { latestPerKey, deltaPerKey } = useMemo(() => {
+		const latest: Partial<Record<MeasurementKey, number>> = {};
+		const previous: Partial<Record<MeasurementKey, number>> = {};
+		for (const row of allMeasurementRows) {
+			for (const key of MEASUREMENT_KEYS) {
+				const v = row[key];
+				if (v != null) {
+					previous[key] = latest[key];
+					latest[key] = v;
+				}
+			}
+		}
+		const delta: Partial<Record<MeasurementKey, number>> = {};
+		for (const key of MEASUREMENT_KEYS) {
+			const l = latest[key];
+			const p = previous[key];
+			if (l != null && p != null) {
+				delta[key] = Math.round((l - p) * 10) / 10;
+			}
+		}
+		return { latestPerKey: latest, deltaPerKey: delta };
+	}, [allMeasurementRows]);
 
 	return (
 		<>
@@ -120,54 +143,64 @@ export function BodyTab() {
 
 				<View className="flex-row flex-wrap" style={{ gap: 10 }}>
 					{MEASUREMENT_KEYS.map((key) => {
-						const rawValue = latestMeasurements?.[key] ?? null;
+						const rawValue = latestPerKey[key] ?? null;
 						const unit = key === "bodyFat" ? "%" : lengthUnit;
 						const value = rawValue != null
 							? (key === "bodyFat" ? rawValue : displayLength(rawValue))
 							: null;
+						const d = deltaPerKey[key] ?? null;
+						const displayDelta = d != null && key !== "bodyFat" ? displayLength(Math.abs(d)) : d != null ? Math.abs(d) : null;
 						return (
-							<View
+							<Pressable
 								key={key}
-								className="px-3 py-3 items-center"
+								onPress={() => setSelectedMeasurement(key)}
+								className="active:opacity-70"
 								style={{
-									backgroundColor: palette.card.DEFAULT,
 									width: "31%",
 									flexGrow: 1,
-									borderRadius: radius.lg,
 								}}
 							>
-								<Text className="text-xs font-medium mb-1" style={{ color: palette.muted.foreground }}>
-									{t(`profile.${key}`)}
-								</Text>
-								<Text className="text-xl font-bold text-foreground">
-									{value != null ? value : "—"}
-								</Text>
-								<View className="flex-row items-center gap-1 mt-0.5">
-									<Text className="text-xs" style={{ color: palette.muted.foreground }}>
-										{unit}
+								<View
+									className="px-3 py-4 items-center"
+									style={{
+										backgroundColor: palette.card.DEFAULT,
+										borderRadius: radius.lg,
+									}}
+								>
+									<Text className="text-xs font-medium mb-1" style={{ color: palette.muted.foreground }}>
+										{t(`profile.${key}`)}
 									</Text>
-									<View
-										style={{
-											width: 5,
-											height: 5,
-											borderRadius: 2.5,
-											backgroundColor: MEASUREMENT_COLORS[key],
-										}}
-									/>
+									<View className="flex-row items-baseline">
+										<Text className="text-xl font-bold text-foreground">
+											{value != null ? value : "—"}
+										</Text>
+										{value != null && (
+											<Text className="text-xs ml-1" style={{ color: palette.muted.foreground }}>{unit}</Text>
+										)}
+									</View>
+									{d != null && d !== 0 ? (
+										<View className="flex-row items-center gap-1 mt-0.5">
+											<Ionicons
+												name={d >= 0 ? "trending-up" : "trending-down"}
+												size={12}
+												color={palette.accent.DEFAULT}
+											/>
+											<Text className="text-xs font-semibold" style={{ color: palette.accent.DEFAULT }}>
+												{d >= 0 ? "+" : "−"}{displayDelta} {unit}
+											</Text>
+										</View>
+									) : (
+										<View className="flex-row items-center gap-1 mt-0.5">
+											<Text className="text-xs" style={{ color: palette.muted.foreground }}>
+												{unit}
+											</Text>
+										</View>
+									)}
 								</View>
-							</View>
+							</Pressable>
 						);
 					})}
 				</View>
-
-				{/* Log Measurements button */}
-				<Button
-					variant="glow"
-					label={t("profile.logMeasurements")}
-					onPress={() => setShowMeasurementsDrawer(true)}
-					fullWidth
-					startIcon={<Ionicons name="add" size={20} />}
-				/>
 			</ScrollView>
 
 			{/* Drawers */}
@@ -176,15 +209,15 @@ export function BodyTab() {
 				onClose={() => setShowWeightDrawer(false)}
 				lastWeight={latestWeight}
 			/>
-			<LogMeasurementsDrawer
-				visible={showMeasurementsDrawer}
-				onClose={() => setShowMeasurementsDrawer(false)}
-				lastValues={latestMeasurements ?? {}}
-			/>
 			<EditHeightDrawer
 				visible={showHeightDrawer}
 				onClose={() => setShowHeightDrawer(false)}
 				currentHeight={heightCm ?? 170}
+			/>
+			<MeasurementDetailDrawer
+				visible={selectedMeasurement != null}
+				onClose={() => setSelectedMeasurement(null)}
+				measurementKey={selectedMeasurement}
 			/>
 		</>
 	);

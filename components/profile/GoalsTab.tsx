@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLiveQuery } from "drizzle-orm/expo-sqlite";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { palette } from "../../lib/palette";
 import { borders, radius } from "../../lib/tokens";
 import { useUnits } from "../../lib/units";
@@ -177,7 +177,7 @@ export function GoalsTab() {
 									style={{
 										height: 6,
 										width: `${Math.round(progress * 100)}%`,
-										backgroundColor: reached ? palette.accent.DEFAULT : palette.accent.DEFAULT,
+										backgroundColor: reached ? palette.foreground : palette.accent.DEFAULT,
 									}}
 								/>
 							</View>
@@ -195,7 +195,14 @@ export function GoalsTab() {
 								</Pressable>
 							) : (
 								<Pressable
-									onPress={() => updateGoalStatus(goal.id, "abandoned")}
+									onPress={() => Alert.alert(
+										t("profile.abandonTitle"),
+										t("profile.abandonMessage"),
+										[
+											{ text: t("common.cancel"), style: "cancel" },
+											{ text: t("profile.abandon"), style: "destructive", onPress: () => updateGoalStatus(goal.id, "abandoned") },
+										],
+									)}
 									className="items-center py-2 active:opacity-70"
 								>
 									<Text className="text-xs" style={{ color: palette.muted.foreground }}>

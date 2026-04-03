@@ -46,8 +46,27 @@ export default function HomeScreen() {
 
 	const sessionCount = programSessions?.length ?? 0;
 
-	function handleSessionSelect(sessionId: number) {
+	async function handleSessionSelect(sessionId: number) {
 		if (launchingSessionId !== null) return;
+
+		const inProgress = await db
+			.select({ id: workoutSessions.id })
+			.from(workoutSessions)
+			.where(eq(workoutSessions.status, "in_progress"))
+			.limit(1);
+
+		if (inProgress.length > 0) {
+			Alert.alert(
+				t("home.replaceTitle"),
+				t("home.replaceMessage"),
+				[
+					{ text: t("common.cancel"), style: "cancel" },
+					{ text: t("home.replaceConfirm"), style: "destructive", onPress: () => launchSession(sessionId) },
+				],
+			);
+			return;
+		}
+
 		launchSession(sessionId);
 	}
 
@@ -143,7 +162,7 @@ export default function HomeScreen() {
 									{t("programs.sessionCount", { count: sessionCount })}
 								</Text>
 							</View>
-							<Ionicons name="chevron-forward" size={18} color={palette.accent.DEFAULT} />
+							<Ionicons name="play" size={18} color={palette.accent.DEFAULT} />
 						</View>
 					</Pressable>
 				</View>

@@ -95,14 +95,9 @@ export const Button = forwardRef<ComponentRef<typeof Pressable>, ButtonProps>(fu
 					{ transform: [{ scale }] },
 				]}
 			>
-				{loading ? (
-					<ActivityIndicator size="small" color={textColor} />
-				) : (
-					<>
-						{isValidElement(startIcon) ? cloneElement(startIcon as React.ReactElement<{ color?: string }>, { color: textColor }) : startIcon}
-						<Text className="text-lg font-bold" style={{ color: textColor }}>{label}</Text>
-					</>
-				)}
+				{loading && <ActivityIndicator size="small" color={textColor} />}
+				{!loading && startIcon && (isValidElement(startIcon) ? cloneElement(startIcon as React.ReactElement<{ color?: string }>, { color: textColor }) : startIcon)}
+				<Text className="text-lg font-bold" style={{ color: textColor }}>{label}</Text>
 			</Animated.View>
 		</Pressable>
 	);

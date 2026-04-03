@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import Svg, { Circle, Line as SvgLine, Path, Text as SvgText } from "react-native-svg";
 import { palette } from "../../lib/palette";
+import { radius } from "../../lib/tokens";
 import { useUnits } from "../../lib/units";
 
 type DataPoint = { date: string; weightKg: number };
@@ -10,6 +11,7 @@ type Props = { data: DataPoint[] };
 
 const CHART_HEIGHT = 200;
 const PAD = { top: 24, right: 20, bottom: 32, left: 44 };
+const HIT_SLOP = 20;
 
 export function WeightChart({ data }: Props) {
 	const { t } = useTranslation();
@@ -17,8 +19,8 @@ export function WeightChart({ data }: Props) {
 	if (data.length === 0) {
 		return (
 			<View
-				className="rounded-2xl items-center justify-center"
-				style={{ backgroundColor: palette.card.DEFAULT, height: CHART_HEIGHT + PAD.top + PAD.bottom }}
+				className="items-center justify-center"
+				style={{ backgroundColor: palette.card.DEFAULT, height: CHART_HEIGHT + PAD.top + PAD.bottom, borderRadius: radius.lg }}
 			>
 				<Text style={{ color: palette.muted.foreground }}>{t("profile.noData")}</Text>
 			</View>
@@ -26,7 +28,7 @@ export function WeightChart({ data }: Props) {
 	}
 
 	return (
-		<View className="rounded-2xl overflow-hidden" style={{ backgroundColor: palette.card.DEFAULT }}>
+		<View className="overflow-hidden" style={{ backgroundColor: palette.card.DEFAULT, borderRadius: radius.lg }}>
 			<Text
 				className="text-xs font-semibold uppercase tracking-widest px-4 pt-4 mb-1"
 				style={{ color: palette.muted.foreground }}
@@ -36,12 +38,16 @@ export function WeightChart({ data }: Props) {
 			<View style={{ height: CHART_HEIGHT + PAD.top + PAD.bottom }}>
 				<ChartContent data={data} />
 			</View>
+			<Text className="text-xs text-center pb-3" style={{ color: palette.muted.foreground }}>
+				{t("profile.tapChart")}
+			</Text>
 		</View>
 	);
 }
 
 function ChartContent({ data }: { data: DataPoint[] }) {
 	const [width, setWidth] = useState(0);
+	const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 	const { displayWeight, weightUnit } = useUnits();
 
 	const chart = useMemo(() => {
@@ -70,18 +76,15 @@ function ChartContent({ data }: { data: DataPoint[] }) {
 		const toX = (day: number) => PAD.left + (day / xMax) * plotW;
 		const toY = (w: number) => PAD.top + plotH - ((w - yMin) / (yMax - yMin)) * plotH;
 
-		// Data path
 		const pathParts = points.map((p, i) => `${i === 0 ? "M" : "L"}${toX(p.x)},${toY(p.y)}`);
 		const dataPath = pathParts.join(" ");
 
-		// Y axis ticks (4 values)
 		const yTicks: number[] = [];
 		const yStep = (yMax - yMin) / 4;
 		for (let i = 0; i <= 4; i++) {
 			yTicks.push(Math.round((yMin + yStep * i) * 10) / 10);
 		}
 
-		// X axis ticks (~4 dates)
 		const xStep = Math.max(1, Math.floor(xMax / 4));
 		const xTicks: { day: number; label: string }[] = [];
 		for (let d = 0; d <= xMax; d += xStep) {
@@ -90,20 +93,18 @@ function ChartContent({ data }: { data: DataPoint[] }) {
 			xTicks.push({ day: d, label: `${m} ${date.getDate()}` });
 		}
 
-		// Latest point for value label
-		const latestPoint = points[points.length - 1];
-
-		return { dataPath, points, yTicks, xTicks, toX, toY, latestPoint };
+		return { dataPath, points, yTicks, xTicks, toX, toY };
 	}, [data, width, displayWeight]);
 
 	if (!chart) {
 		return <View style={{ flex: 1 }} onLayout={(e) => setWidth(e.nativeEvent.layout.width)} />;
 	}
 
+	const selected = selectedIndex != null ? chart.points[selectedIndex] : null;
+
 	return (
-		<View style={{ flex: 1 }} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
+		<Pressable style={{ flex: 1 }} onPress={() => setSelectedIndex(null)} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
 			<Svg width={width} height={CHART_HEIGHT}>
-				{/* Y grid lines */}
 				{chart.yTicks.map((v) => (
 					<SvgLine
 						key={`yg-${v}`}
@@ -115,8 +116,6 @@ function ChartContent({ data }: { data: DataPoint[] }) {
 						strokeDasharray="4,4"
 					/>
 				))}
-
-				{/* Y axis labels */}
 				{chart.yTicks.map((v) => (
 					<SvgText
 						key={`yl-${v}`}
@@ -129,8 +128,6 @@ function ChartContent({ data }: { data: DataPoint[] }) {
 						{v}
 					</SvgText>
 				))}
-
-				{/* X axis labels */}
 				{chart.xTicks.map((tick) => (
 					<SvgText
 						key={`xl-${tick.day}`}
@@ -143,42 +140,62 @@ function ChartContent({ data }: { data: DataPoint[] }) {
 						{tick.label}
 					</SvgText>
 				))}
-
-				{/* Data line */}
-				<Path
-					d={chart.dataPath}
-					stroke={palette.accent.DEFAULT}
-					strokeWidth={2.5}
-					fill="none"
-				/>
-
-				{/* Data points */}
-				{chart.points.map((p) => (
+				<Path d={chart.dataPath} stroke={palette.accent.DEFAULT} strokeWidth={2.5} fill="none" />
+				{chart.points.map((p, i) => (
 					<Circle
 						key={`pt-${p.date}`}
 						cx={chart.toX(p.x)}
 						cy={chart.toY(p.y)}
-						r={4}
-						fill={palette.background}
+						r={selectedIndex === i ? 6 : 4}
+						fill={selectedIndex === i ? palette.accent.DEFAULT : palette.background}
 						stroke={palette.accent.DEFAULT}
 						strokeWidth={2}
 					/>
 				))}
-
-				{/* Latest value label */}
-				{chart.latestPoint && (
-					<SvgText
-						x={chart.toX(chart.latestPoint.x)}
-						y={chart.toY(chart.latestPoint.y) - 10}
-						fill={palette.accent.DEFAULT}
-						fontSize={11}
-						fontWeight="bold"
-						textAnchor="middle"
-					>
-						{chart.latestPoint.y} {weightUnit}
-					</SvgText>
-				)}
 			</Svg>
-		</View>
+
+			{/* Hit targets for each point */}
+			{chart.points.map((p, i) => (
+				<Pressable
+					key={`hit-${p.date}`}
+					onPress={() => setSelectedIndex(selectedIndex === i ? null : i)}
+					style={{
+						position: "absolute",
+						left: chart.toX(p.x) - HIT_SLOP,
+						top: chart.toY(p.y) - HIT_SLOP,
+						width: HIT_SLOP * 2,
+						height: HIT_SLOP * 2,
+					}}
+				/>
+			))}
+
+			{/* Tooltip */}
+			{selected && (
+				<View
+					style={{
+						position: "absolute",
+						left: Math.max(8, Math.min(chart.toX(selected.x) - 60, width - 128)),
+						top: chart.toY(selected.y) - 52,
+						backgroundColor: palette.foreground,
+						borderRadius: radius.sm,
+						paddingHorizontal: 10,
+						paddingVertical: 6,
+					}}
+				>
+					<Text style={{ fontSize: 12, fontWeight: "700", color: palette.background }}>
+						{selected.y} {weightUnit}
+					</Text>
+					<Text style={{ fontSize: 10, color: palette.muted.foreground }}>
+						{formatTooltipDate(selected.date)}
+					</Text>
+				</View>
+			)}
+		</Pressable>
 	);
+}
+
+function formatTooltipDate(dateStr: string): string {
+	const [y, m, d] = dateStr.split("-").map(Number);
+	const date = new Date(y, m - 1, d);
+	return date.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 }

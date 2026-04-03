@@ -200,7 +200,7 @@ export default function ProgramsScreen() {
 																className="mr-1 text-xs font-bold"
 																style={{ color: palette.accent.DEFAULT }}
 															>
-																D{i + 1}
+																{t("programs.dayLabel", { n: i + 1 })}
 															</Text>
 															<Text className="text-xs font-medium text-foreground">{s.name}</Text>
 														</View>
@@ -257,7 +257,7 @@ export default function ProgramsScreen() {
 						returnKeyType="done"
 						onSubmitEditing={handleCreate}
 					/>
-					<Button variant="glow" fullWidth label={t("common.create")} onPress={handleCreate} />
+					<Button variant="glow" fullWidth label={t("common.create")} onPress={handleCreate} disabled={!programName.trim()} />
 				</View>
 			</BottomDrawer>
 
