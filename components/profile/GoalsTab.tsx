@@ -4,18 +4,28 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { palette } from "../../lib/palette";
-import { borders, radius } from "../../lib/tokens";
-import { useUnits } from "../../lib/units";
 import {
 	getActiveGoalsQuery,
 	getLatestMeasurementsQuery,
 	getLatestWeightQuery,
 	updateGoalStatus,
 } from "../../lib/profileQueries";
+import { borders, radius } from "../../lib/tokens";
+import { useUnits } from "../../lib/units";
 import { Button } from "../Button";
 import { CreateGoalDrawer } from "./CreateGoalDrawer";
 
-type GoalType = "weight" | "bodyFat" | "shoulders" | "chest" | "waist" | "hips" | "neck" | "arms" | "thigh" | "calf";
+type GoalType =
+	| "weight"
+	| "bodyFat"
+	| "shoulders"
+	| "chest"
+	| "waist"
+	| "hips"
+	| "neck"
+	| "arms"
+	| "thigh"
+	| "calf";
 
 function todayStr(): string {
 	const d = new Date();
@@ -105,10 +115,12 @@ export function GoalsTab() {
 						return type === "weight" ? displayWeight(v) : displayLength(v);
 					};
 					const days = daysUntil(goal.deadline);
-					const progress = currentValue != null
-						? computeProgress(goal.startValue, currentValue, goal.targetValue)
-						: 0;
-					const reached = currentValue != null && isGoalReached(currentValue, goal.targetValue, goal.startValue);
+					const progress =
+						currentValue != null
+							? computeProgress(goal.startValue, currentValue, goal.targetValue)
+							: 0;
+					const reached =
+						currentValue != null && isGoalReached(currentValue, goal.targetValue, goal.startValue);
 
 					return (
 						<View
@@ -134,9 +146,15 @@ export function GoalsTab() {
 									</Text>
 								</View>
 								{reached ? (
-									<View className="flex-row items-center gap-1 px-2 py-1" style={{ backgroundColor: palette.accent.muted, borderRadius: radius.md }}>
+									<View
+										className="flex-row items-center gap-1 px-2 py-1"
+										style={{ backgroundColor: palette.accent.muted, borderRadius: radius.md }}
+									>
 										<Ionicons name="checkmark-circle" size={14} color={palette.accent.DEFAULT} />
-										<Text className="text-xs font-semibold" style={{ color: palette.accent.DEFAULT }}>
+										<Text
+											className="text-xs font-semibold"
+											style={{ color: palette.accent.DEFAULT }}
+										>
 											{t("profile.goalReached")}
 										</Text>
 									</View>
@@ -149,9 +167,13 @@ export function GoalsTab() {
 										/>
 										<Text
 											className="text-xs"
-											style={{ color: days < 0 ? palette.destructive.DEFAULT : palette.muted.foreground }}
+											style={{
+												color: days < 0 ? palette.destructive.DEFAULT : palette.muted.foreground,
+											}}
 										>
-											{days < 0 ? t("profile.expired") : t("profile.daysRemaining", { count: days })}
+											{days < 0
+												? t("profile.expired")
+												: t("profile.daysRemaining", { count: days })}
 										</Text>
 									</View>
 								)}
@@ -162,16 +184,28 @@ export function GoalsTab() {
 								<Text className="text-2xl font-bold text-foreground">
 									{displayValue(currentValue) ?? "—"}
 								</Text>
-								<Text className="text-sm" style={{ color: palette.muted.foreground }}>{unit}</Text>
-								<Ionicons name="arrow-forward" size={14} color={palette.muted.foreground} style={{ marginHorizontal: 4 }} />
+								<Text className="text-sm" style={{ color: palette.muted.foreground }}>
+									{unit}
+								</Text>
+								<Ionicons
+									name="arrow-forward"
+									size={14}
+									color={palette.muted.foreground}
+									style={{ marginHorizontal: 4 }}
+								/>
 								<Text className="text-2xl font-bold" style={{ color: palette.accent.DEFAULT }}>
 									{displayValue(goal.targetValue)}
 								</Text>
-								<Text className="text-sm" style={{ color: palette.muted.foreground }}>{unit}</Text>
+								<Text className="text-sm" style={{ color: palette.muted.foreground }}>
+									{unit}
+								</Text>
 							</View>
 
 							{/* Progress bar */}
-							<View className="rounded-full overflow-hidden mb-3" style={{ height: 6, backgroundColor: palette.muted.DEFAULT }}>
+							<View
+								className="rounded-full overflow-hidden mb-3"
+								style={{ height: 6, backgroundColor: palette.muted.DEFAULT }}
+							>
 								<View
 									className="rounded-full"
 									style={{
@@ -195,14 +229,16 @@ export function GoalsTab() {
 								</Pressable>
 							) : (
 								<Pressable
-									onPress={() => Alert.alert(
-										t("profile.abandonTitle"),
-										t("profile.abandonMessage"),
-										[
+									onPress={() =>
+										Alert.alert(t("profile.abandonTitle"), t("profile.abandonMessage"), [
 											{ text: t("common.cancel"), style: "cancel" },
-											{ text: t("profile.abandon"), style: "destructive", onPress: () => updateGoalStatus(goal.id, "abandoned") },
-										],
-									)}
+											{
+												text: t("profile.abandon"),
+												style: "destructive",
+												onPress: () => updateGoalStatus(goal.id, "abandoned"),
+											},
+										])
+									}
 									className="items-center py-2 active:opacity-70"
 								>
 									<Text className="text-xs" style={{ color: palette.muted.foreground }}>

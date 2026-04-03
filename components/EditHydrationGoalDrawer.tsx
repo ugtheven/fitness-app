@@ -17,7 +17,15 @@ type Props = {
 	onSave: (value: number | null) => void;
 };
 
-export function EditHydrationGoalDrawer({ visible, onClose, currentGoal, autoGoal, isCustom, hasWeight, onSave }: Props) {
+export function EditHydrationGoalDrawer({
+	visible,
+	onClose,
+	currentGoal,
+	autoGoal,
+	isCustom,
+	hasWeight,
+	onSave,
+}: Props) {
 	const { t } = useTranslation();
 	const [value, setValue] = useState(currentGoal);
 

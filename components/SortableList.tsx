@@ -76,7 +76,10 @@ function SortableItem({
 
 		if (from === -1) {
 			return {
-				transform: [{ translateY: withTiming(0, { duration: 200 }) }, { scale: withTiming(1, { duration: 200 }) }],
+				transform: [
+					{ translateY: withTiming(0, { duration: 200 }) },
+					{ scale: withTiming(1, { duration: 200 }) },
+				],
 				zIndex: 0,
 				shadowOpacity: withTiming(0, { duration: 200 }),
 				elevation: withTiming(0, { duration: 200 }),
@@ -85,7 +88,10 @@ function SortableItem({
 
 		if (from === index) {
 			return {
-				transform: [{ translateY: dragY.value }, { scale: withSpring(1.03, { damping: 15, stiffness: 300 }) }],
+				transform: [
+					{ translateY: dragY.value },
+					{ scale: withSpring(1.03, { damping: 15, stiffness: 300 }) },
+				],
 				zIndex: 100,
 				shadowColor: palette.shadow,
 				shadowOpacity: withSpring(0.2, { damping: 15, stiffness: 300 }),
@@ -138,7 +144,7 @@ export function SortableList<T>({
 			newData.splice(to, 0, item);
 			onReorder(newData);
 		},
-		[data, onReorder],
+		[data, onReorder]
 	);
 
 	return (

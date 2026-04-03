@@ -30,7 +30,13 @@ function daysInMonth(year: number, month: number): number {
 	return new Date(year, month + 1, 0).getDate();
 }
 
-export function Calendar({ selectedDate, onSelectDate, workoutDates, displayMonth, onChangeMonth }: CalendarProps) {
+export function Calendar({
+	selectedDate,
+	onSelectDate,
+	workoutDates,
+	displayMonth,
+	onChangeMonth,
+}: CalendarProps) {
 	const { i18n } = useTranslation();
 	const locale = i18n.language;
 
@@ -93,7 +99,12 @@ export function Calendar({ selectedDate, onSelectDate, workoutDates, displayMont
 					hitSlop={12}
 					accessibilityLabel="Previous month"
 					className="items-center justify-center"
-					style={{ width: 36, height: 36, borderRadius: radius.md, backgroundColor: palette.muted.DEFAULT }}
+					style={{
+						width: 36,
+						height: 36,
+						borderRadius: radius.md,
+						backgroundColor: palette.muted.DEFAULT,
+					}}
 				>
 					<Ionicons name="chevron-back" size={18} color={palette.foreground} />
 				</Pressable>
@@ -107,7 +118,12 @@ export function Calendar({ selectedDate, onSelectDate, workoutDates, displayMont
 					hitSlop={12}
 					accessibilityLabel="Next month"
 					className="items-center justify-center"
-					style={{ width: 36, height: 36, borderRadius: radius.md, backgroundColor: palette.muted.DEFAULT }}
+					style={{
+						width: 36,
+						height: 36,
+						borderRadius: radius.md,
+						backgroundColor: palette.muted.DEFAULT,
+					}}
 				>
 					<Ionicons name="chevron-forward" size={18} color={palette.foreground} />
 				</Pressable>
@@ -117,7 +133,9 @@ export function Calendar({ selectedDate, onSelectDate, workoutDates, displayMont
 			<View className="mb-2 flex-row">
 				{weekdayHeaders.map((label, i) => (
 					<View key={i} className="flex-1 items-center">
-						<Text className="text-xs font-medium" style={{ color: palette.muted.foreground }}>{label}</Text>
+						<Text className="text-xs font-medium" style={{ color: palette.muted.foreground }}>
+							{label}
+						</Text>
 					</View>
 				))}
 			</View>
@@ -150,10 +168,11 @@ export function Calendar({ selectedDate, onSelectDate, workoutDates, displayMont
 									style={[
 										{ width: 34, height: 34, borderRadius: radius.sm },
 										isSelected && { backgroundColor: palette.muted.DEFAULT },
-										isToday && !isSelected && {
-											borderWidth: borders.emphasis,
-											borderColor: palette.accent.DEFAULT,
-										},
+										isToday &&
+											!isSelected && {
+												borderWidth: borders.emphasis,
+												borderColor: palette.accent.DEFAULT,
+											},
 									]}
 								>
 									<Text

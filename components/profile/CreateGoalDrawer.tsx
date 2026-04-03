@@ -5,17 +5,41 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
 import { palette } from "../../lib/palette";
+import {
+	getLatestMeasurementsQuery,
+	getLatestWeightQuery,
+	insertGoal,
+} from "../../lib/profileQueries";
 import { radius, spacing } from "../../lib/tokens";
-import { getLatestMeasurementsQuery, getLatestWeightQuery, insertGoal } from "../../lib/profileQueries";
 import { useUnits } from "../../lib/units";
 import { BottomDrawer } from "../BottomDrawer";
 import { Button } from "../Button";
 import { NumberField } from "../NumberField";
 
-type GoalType = "weight" | "bodyFat" | "shoulders" | "chest" | "waist" | "hips" | "neck" | "arms" | "thigh" | "calf";
+type GoalType =
+	| "weight"
+	| "bodyFat"
+	| "shoulders"
+	| "chest"
+	| "waist"
+	| "hips"
+	| "neck"
+	| "arms"
+	| "thigh"
+	| "calf";
 type Category = "weight" | "measurement";
 
-const MEASUREMENT_KEYS: GoalType[] = ["bodyFat", "shoulders", "chest", "waist", "hips", "neck", "arms", "thigh", "calf"];
+const MEASUREMENT_KEYS: GoalType[] = [
+	"bodyFat",
+	"shoulders",
+	"chest",
+	"waist",
+	"hips",
+	"neck",
+	"arms",
+	"thigh",
+	"calf",
+];
 
 function todayStr(): string {
 	const d = new Date();
@@ -43,7 +67,8 @@ type Props = {
 
 export function CreateGoalDrawer({ visible, onClose }: Props) {
 	const { t } = useTranslation();
-	const { displayWeight, displayLength, toStorageWeight, toStorageLength, weightUnit, lengthUnit } = useUnits();
+	const { displayWeight, displayLength, toStorageWeight, toStorageLength, weightUnit, lengthUnit } =
+		useUnits();
 	const [category, setCategory] = useState<Category>("weight");
 	const [measurementKey, setMeasurementKey] = useState<GoalType>("chest");
 	const [targetValue, setTargetValue] = useState(() => displayWeight(80));
@@ -89,9 +114,12 @@ export function CreateGoalDrawer({ visible, onClose }: Props) {
 		if (!deadline) return;
 		setSaving(true);
 		try {
-			const toStorage = goalType === "bodyFat"
-				? (v: number) => v
-				: goalType === "weight" ? toStorageWeight : toStorageLength;
+			const toStorage =
+				goalType === "bodyFat"
+					? (v: number) => v
+					: goalType === "weight"
+						? toStorageWeight
+						: toStorageLength;
 			await insertGoal({
 				type: goalType,
 				targetValue: toStorage(targetValue),
@@ -125,7 +153,9 @@ export function CreateGoalDrawer({ visible, onClose }: Props) {
 								>
 									<Text
 										className="text-sm font-semibold"
-										style={{ color: isActive ? palette.primary.foreground : palette.muted.foreground }}
+										style={{
+											color: isActive ? palette.primary.foreground : palette.muted.foreground,
+										}}
 									>
 										{cat === "weight" ? t("profile.goalWeight") : t("profile.goalMeasurement")}
 									</Text>
@@ -138,7 +168,9 @@ export function CreateGoalDrawer({ visible, onClose }: Props) {
 				{/* Measurement picker */}
 				{category === "measurement" && (
 					<View>
-						<Text className="text-sm font-medium text-foreground mb-2">{t("profile.goalMeasurement")}</Text>
+						<Text className="text-sm font-medium text-foreground mb-2">
+							{t("profile.goalMeasurement")}
+						</Text>
 						<View className="flex-row flex-wrap" style={{ gap: 8 }}>
 							{MEASUREMENT_KEYS.map((key) => {
 								const isActive = measurementKey === key;
@@ -154,7 +186,9 @@ export function CreateGoalDrawer({ visible, onClose }: Props) {
 									>
 										<Text
 											className="text-xs font-semibold"
-											style={{ color: isActive ? palette.primary.foreground : palette.muted.foreground }}
+											style={{
+												color: isActive ? palette.primary.foreground : palette.muted.foreground,
+											}}
 										>
 											{t(`profile.${key}`)}
 										</Text>

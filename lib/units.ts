@@ -56,8 +56,10 @@ function round05(n: number): number {
 	return Math.round(n * 2) / 2;
 }
 
-
-function buildContextValue(system: UnitSystem, setSystem: (s: UnitSystem) => void): UnitContextValue {
+function buildContextValue(
+	system: UnitSystem,
+	setSystem: (s: UnitSystem) => void
+): UnitContextValue {
 	const isImperial = system === "imperial";
 
 	return {
@@ -90,9 +92,7 @@ function buildContextValue(system: UnitSystem, setSystem: (s: UnitSystem) => voi
 	};
 }
 
-export const UnitContext = createContext<UnitContextValue>(
-	buildContextValue("metric", () => {}),
-);
+export const UnitContext = createContext<UnitContextValue>(buildContextValue("metric", () => {}));
 
 export function useUnits(): UnitContextValue {
 	return useContext(UnitContext);

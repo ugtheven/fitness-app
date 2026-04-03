@@ -16,7 +16,14 @@ type SessionCardProps = {
 	onDelete: () => void;
 };
 
-export function SessionCard({ name, exerciseCount, muscles, isDragging, onPress, onDelete }: SessionCardProps) {
+export function SessionCard({
+	name,
+	exerciseCount,
+	muscles,
+	isDragging,
+	onPress,
+	onDelete,
+}: SessionCardProps) {
 	const { t } = useTranslation();
 
 	return (

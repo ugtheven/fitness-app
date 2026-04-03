@@ -52,7 +52,9 @@ export default function ActivityScreen() {
 	const router = useRouter();
 
 	const now = new Date();
-	const [displayMonth, setDisplayMonth] = useState(() => new Date(now.getFullYear(), now.getMonth(), 1));
+	const [displayMonth, setDisplayMonth] = useState(
+		() => new Date(now.getFullYear(), now.getMonth(), 1)
+	);
 	const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
 	const year = displayMonth.getFullYear();
@@ -62,7 +64,6 @@ export default function ActivityScreen() {
 
 	const [prCounts, setPrCounts] = useState<Map<number, number>>(new Map());
 	const loadedIdsRef = useRef<Set<number>>(new Set());
-
 
 	// Load PRs for new workouts
 	useEffect(() => {
@@ -74,7 +75,7 @@ export default function ActivityScreen() {
 		}
 
 		Promise.all(
-			newIds.map((w) => getSessionPRs(w.id).then((prs) => [w.id, prs.length] as const)),
+			newIds.map((w) => getSessionPRs(w.id).then((prs) => [w.id, prs.length] as const))
 		).then((results) => {
 			setPrCounts((prev) => {
 				const next = new Map(prev);
@@ -127,7 +128,7 @@ export default function ActivityScreen() {
 				totalTimeMs += new Date(w.endedAt).getTime() - new Date(w.startedAt).getTime();
 			}
 		}
-		const totalHours = Math.round(totalTimeMs / 3_600_000 * 10) / 10;
+		const totalHours = Math.round((totalTimeMs / 3_600_000) * 10) / 10;
 		const displayedVolume = displayWeight(totalVolume);
 		const totalTons = Math.round(displayedVolume / 100) / 10;
 		return { sessions: workouts.length, volume: totalTons, hours: totalHours };
@@ -150,34 +151,41 @@ export default function ActivityScreen() {
 
 				{/* Stat cards */}
 				<View className="flex-row px-6 gap-3 mb-5">
-					<View className="flex-1 px-4 py-3" style={{ backgroundColor: palette.card.DEFAULT, borderRadius: radius.lg }}>
+					<View
+						className="flex-1 px-4 py-3"
+						style={{ backgroundColor: palette.card.DEFAULT, borderRadius: radius.lg }}
+					>
 						<Text className="text-xs font-medium mb-1" style={{ color: palette.muted.foreground }}>
 							{t("activity.statSessions")}
 						</Text>
-						<Text className="text-2xl font-bold text-foreground">
-							{monthStats.sessions}
-						</Text>
+						<Text className="text-2xl font-bold text-foreground">{monthStats.sessions}</Text>
 					</View>
-					<View className="flex-1 px-4 py-3" style={{ backgroundColor: palette.card.DEFAULT, borderRadius: radius.lg }}>
+					<View
+						className="flex-1 px-4 py-3"
+						style={{ backgroundColor: palette.card.DEFAULT, borderRadius: radius.lg }}
+					>
 						<Text className="text-xs font-medium mb-1" style={{ color: palette.muted.foreground }}>
 							{t("activity.statVolume")}
 						</Text>
 						<View className="flex-row items-baseline">
-							<Text className="text-2xl font-bold text-foreground">
-								{monthStats.volume}
+							<Text className="text-2xl font-bold text-foreground">{monthStats.volume}</Text>
+							<Text className="text-sm ml-1" style={{ color: palette.muted.foreground }}>
+								tons
 							</Text>
-							<Text className="text-sm ml-1" style={{ color: palette.muted.foreground }}>tons</Text>
 						</View>
 					</View>
-					<View className="flex-1 px-4 py-3" style={{ backgroundColor: palette.card.DEFAULT, borderRadius: radius.lg }}>
+					<View
+						className="flex-1 px-4 py-3"
+						style={{ backgroundColor: palette.card.DEFAULT, borderRadius: radius.lg }}
+					>
 						<Text className="text-xs font-medium mb-1" style={{ color: palette.muted.foreground }}>
 							{t("activity.statTime")}
 						</Text>
 						<View className="flex-row items-baseline">
-							<Text className="text-2xl font-bold text-foreground">
-								{monthStats.hours}
+							<Text className="text-2xl font-bold text-foreground">{monthStats.hours}</Text>
+							<Text className="text-sm ml-1" style={{ color: palette.muted.foreground }}>
+								hrs
 							</Text>
-							<Text className="text-sm ml-1" style={{ color: palette.muted.foreground }}>hrs</Text>
 						</View>
 					</View>
 				</View>
@@ -205,14 +213,18 @@ export default function ActivityScreen() {
 				{filteredWorkouts.length === 0 ? (
 					<View className="items-center justify-center px-6 py-12 gap-2">
 						{selectedDate ? (
-							<Text className="text-base" style={{ color: palette.muted.foreground }}>{emptyMessage}</Text>
+							<Text className="text-base" style={{ color: palette.muted.foreground }}>
+								{emptyMessage}
+							</Text>
 						) : (
 							<Text className="text-sm text-center" style={{ color: palette.muted.foreground }}>
 								{t("activity.calendarHint")}
 							</Text>
 						)}
 						{emptyHint !== "" && (
-							<Text className="text-sm" style={{ color: palette.muted.foreground }}>{emptyHint}</Text>
+							<Text className="text-sm" style={{ color: palette.muted.foreground }}>
+								{emptyHint}
+							</Text>
 						)}
 					</View>
 				) : (
@@ -228,7 +240,10 @@ export default function ActivityScreen() {
 									style={{ backgroundColor: palette.card.DEFAULT, borderRadius: radius.lg }}
 								>
 									<View className="flex-row items-center justify-between mb-1.5">
-										<Text className="text-base font-semibold text-foreground flex-1 mr-3" numberOfLines={1}>
+										<Text
+											className="text-base font-semibold text-foreground flex-1 mr-3"
+											numberOfLines={1}
+										>
 											{workout.sessionName ?? t("activity.deletedSession")}
 										</Text>
 										<Text className="text-xs" style={{ color: palette.muted.foreground }}>
@@ -239,20 +254,29 @@ export default function ActivityScreen() {
 										<Text className="text-xs" style={{ color: palette.muted.foreground }}>
 											{formatDuration(workout.startedAt, workout.endedAt)}
 										</Text>
-										<Text className="text-xs" style={{ color: palette.muted.foreground }}>·</Text>
+										<Text className="text-xs" style={{ color: palette.muted.foreground }}>
+											·
+										</Text>
 										<Text className="text-xs" style={{ color: palette.muted.foreground }}>
 											{workout.setCount} sets
 										</Text>
-										<Text className="text-xs" style={{ color: palette.muted.foreground }}>·</Text>
+										<Text className="text-xs" style={{ color: palette.muted.foreground }}>
+											·
+										</Text>
 										<Text className="text-xs" style={{ color: palette.muted.foreground }}>
 											{formatVolume(displayWeight(workout.totalVolume), weightUnit)}
 										</Text>
 										{(prCounts.get(workout.id) ?? 0) > 0 && (
 											<>
-												<Text className="text-xs" style={{ color: palette.muted.foreground }}>·</Text>
+												<Text className="text-xs" style={{ color: palette.muted.foreground }}>
+													·
+												</Text>
 												<View className="flex-row items-center gap-1">
 													<Ionicons name="flash" size={12} color={palette.accent.DEFAULT} />
-													<Text className="text-xs font-semibold" style={{ color: palette.accent.DEFAULT }}>
+													<Text
+														className="text-xs font-semibold"
+														style={{ color: palette.accent.DEFAULT }}
+													>
 														{prCounts.get(workout.id)} PR
 													</Text>
 												</View>

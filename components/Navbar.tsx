@@ -45,10 +45,7 @@ export function Navbar({ state, descriptors, navigation }: BottomTabBarProps) {
 				<BlurView style={StyleSheet.absoluteFill} intensity={25} tint="dark" />
 				<View style={[StyleSheet.absoluteFill, styles.overlay]} />
 
-				<View
-					style={styles.tabRow}
-					onLayout={(e) => setRowWidth(e.nativeEvent.layout.width)}
-				>
+				<View style={styles.tabRow} onLayout={(e) => setRowWidth(e.nativeEvent.layout.width)}>
 					{/* Sliding lens */}
 					{rowWidth > 0 && (
 						<Animated.View
@@ -100,12 +97,7 @@ export function Navbar({ state, descriptors, navigation }: BottomTabBarProps) {
 									size={22}
 									color={color}
 								/>
-								<Text
-									style={[
-										styles.tabLabel,
-										{ color, fontWeight: isFocused ? "600" : "400" },
-									]}
-								>
+								<Text style={[styles.tabLabel, { color, fontWeight: isFocused ? "600" : "400" }]}>
 									{label}
 								</Text>
 							</Pressable>

@@ -66,7 +66,9 @@ export function ChipList({ labels }: ChipListProps) {
 			))}
 
 			{allMeasured &&
-				labels.slice(0, visibleCount).map((label, i) => <Chip key={`${i}-${label}`} label={label} />)}
+				labels
+					.slice(0, visibleCount)
+					.map((label, i) => <Chip key={`${i}-${label}`} label={label} />)}
 			{allMeasured && overflow > 0 && <Chip label={`+${overflow}`} />}
 		</View>
 	);

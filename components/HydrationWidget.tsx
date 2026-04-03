@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
 import { computeHydrationGoal, formatLiters, todayStr } from "../lib/hydration";
-import { addWater, removeWater, getTodayHydrationQuery } from "../lib/hydrationQueries";
+import { addWater, getTodayHydrationQuery, removeWater } from "../lib/hydrationQueries";
 import { palette } from "../lib/palette";
 import { getLatestWeightQuery } from "../lib/profileQueries";
 import { radius } from "../lib/tokens";
@@ -36,7 +36,7 @@ export function HydrationWidget() {
 
 	const autoGoal = useMemo(
 		() => computeHydrationGoal(latestWeights[0]?.weightKg ?? null),
-		[latestWeights],
+		[latestWeights]
 	);
 	const goalMl = customGoal ?? autoGoal;
 	const volumeMl = todayLogs[0]?.volumeMl ?? 0;
@@ -72,22 +72,25 @@ export function HydrationWidget() {
 
 	return (
 		<>
-			<View style={{ backgroundColor: palette.card.DEFAULT, borderRadius: radius.lg, padding: 16, gap: 12 }}>
+			<View
+				style={{
+					backgroundColor: palette.card.DEFAULT,
+					borderRadius: radius.lg,
+					padding: 16,
+					gap: 12,
+				}}
+			>
 				{/* Header: icon + title + volume/goal */}
 				<View className="flex-row items-center justify-between">
 					<View className="flex-row items-center gap-2">
 						<Ionicons name="water-outline" size={18} color={palette.accent.DEFAULT} />
-						<Text className="text-sm font-semibold text-foreground">
-							{t("hydration.title")}
-						</Text>
+						<Text className="text-sm font-semibold text-foreground">{t("hydration.title")}</Text>
 					</View>
 					<Pressable
 						className="flex-row items-center gap-1 active:opacity-70"
 						onPress={() => setShowGoalDrawer(true)}
 					>
-						<Text className="text-sm font-bold text-foreground">
-							{formatLiters(volumeMl)}
-						</Text>
+						<Text className="text-sm font-bold text-foreground">{formatLiters(volumeMl)}</Text>
 						<Text className="text-xs" style={{ color: palette.muted.foreground }}>
 							/ {formatLiters(goalMl)} L
 						</Text>
@@ -97,15 +100,28 @@ export function HydrationWidget() {
 							</Text>
 						)}
 						{isComplete ? (
-							<Ionicons name="checkmark-circle" size={14} color={palette.accent.DEFAULT} style={{ marginLeft: 4 }} />
+							<Ionicons
+								name="checkmark-circle"
+								size={14}
+								color={palette.accent.DEFAULT}
+								style={{ marginLeft: 4 }}
+							/>
 						) : (
-							<Ionicons name="pencil" size={12} color={palette.muted.foreground} style={{ marginLeft: 4 }} />
+							<Ionicons
+								name="pencil"
+								size={12}
+								color={palette.muted.foreground}
+								style={{ marginLeft: 4 }}
+							/>
 						)}
 					</Pressable>
 				</View>
 
 				{/* Progress bar */}
-				<View className="rounded-full overflow-hidden" style={{ height: 8, backgroundColor: palette.muted.DEFAULT }}>
+				<View
+					className="rounded-full overflow-hidden"
+					style={{ height: 8, backgroundColor: palette.muted.DEFAULT }}
+				>
 					<View
 						className="rounded-full"
 						style={{
@@ -116,8 +132,20 @@ export function HydrationWidget() {
 					/>
 				</View>
 
-				{/* Quick add buttons */}
+				{/* Undo + Quick add buttons */}
 				<View className="flex-row gap-2">
+					<Pressable
+						onPress={handleUndo}
+						disabled={undoAmount == null}
+						className="items-center justify-center py-2.5 px-3 active:opacity-70"
+						style={{
+							backgroundColor: palette.muted.DEFAULT,
+							borderRadius: radius.md,
+							opacity: undoAmount != null ? 1 : 0.3,
+						}}
+					>
+						<Ionicons name="arrow-undo" size={16} color={palette.foreground} />
+					</Pressable>
 					{AMOUNTS.map((ml) => (
 						<Pressable
 							key={ml}
@@ -134,23 +162,6 @@ export function HydrationWidget() {
 						</Pressable>
 					))}
 				</View>
-
-				{/* Undo toast */}
-				{undoAmount != null && (
-					<View
-						className="flex-row items-center justify-between px-4 py-2.5"
-						style={{ backgroundColor: palette.muted.DEFAULT, borderRadius: radius.md }}
-					>
-						<Text className="text-xs" style={{ color: palette.muted.foreground }}>
-							+{undoAmount}ml
-						</Text>
-						<Pressable onPress={handleUndo} className="active:opacity-70">
-							<Text className="text-xs font-bold" style={{ color: palette.accent.DEFAULT }}>
-								{t("workout.undo")}
-							</Text>
-						</Pressable>
-					</View>
-				)}
 			</View>
 
 			<EditHydrationGoalDrawer

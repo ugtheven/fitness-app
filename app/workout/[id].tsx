@@ -6,14 +6,23 @@ import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useAchievementToast } from "../../components/AchievementToast";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { db } from "../../db";
-import { programs, sessionExercises, sessions, workoutExercises, workoutSessions } from "../../db/schema";
-import { EXERCISE_VARIANTS_BY_ID } from "../../lib/exerciseVariants";
+import {
+	programs,
+	sessionExercises,
+	sessions,
+	workoutExercises,
+	workoutSessions,
+} from "../../db/schema";
 import type { Equipment } from "../../lib/exerciseTypes";
-import { useSessionTimer } from "../../lib/useSessionTimer";
+import { EXERCISE_VARIANTS_BY_ID } from "../../lib/exerciseVariants";
 import { palette } from "../../lib/palette";
 import { borders, radius } from "../../lib/tokens";
+import { useSessionTimer } from "../../lib/useSessionTimer";
+import { XP_REWARDS } from "../../lib/xp";
+import { checkAndGrantAchievements, grantXp } from "../../lib/xpQueries";
 
 function equipmentIcon(equipment: Equipment): keyof typeof Ionicons.glyphMap {
 	switch (equipment) {
@@ -33,6 +42,7 @@ export default function WorkoutScreen() {
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const workoutSessionId = Number(id);
 	const router = useRouter();
+	const { showAchievementToast } = useAchievementToast();
 
 	const { data: workoutSessionData } = useLiveQuery(
 		db
@@ -72,20 +82,32 @@ export default function WorkoutScreen() {
 		if (!workoutSession || workoutSession.status === "completed") return;
 		if (exerciseRows.length === 0) return;
 
-		const allDone = exerciseRows.every(({ workoutExercise }) => workoutExercise.status === "completed");
+		const allDone = exerciseRows.every(
+			({ workoutExercise }) => workoutExercise.status === "completed"
+		);
 		if (!allDone) return;
 
 		async function finalize() {
 			await db
 				.update(workoutSessions)
 				.set({ status: "completed", endedAt: new Date().toISOString() })
-				.where(and(eq(workoutSessions.id, workoutSessionId), eq(workoutSessions.status, "in_progress")));
+				.where(
+					and(eq(workoutSessions.id, workoutSessionId), eq(workoutSessions.status, "in_progress"))
+				);
+
+			const date = workoutSession.date;
+			await grantXp(XP_REWARDS.workout, "workout", workoutSessionId, date);
+			const newAchievements = await checkAndGrantAchievements(date);
+			for (const a of newAchievements) {
+				showAchievementToast(a);
+			}
 		}
 		finalize();
-	}, [exerciseRows, workoutSession, workoutSessionId]);
+	}, [exerciseRows, workoutSession, workoutSessionId, showAchievementToast]);
 
-
-	const doneCount = exerciseRows.filter(({ workoutExercise }) => workoutExercise.status === "completed").length;
+	const doneCount = exerciseRows.filter(
+		({ workoutExercise }) => workoutExercise.status === "completed"
+	).length;
 	const totalCount = exerciseRows.length;
 	const currentExerciseId = exerciseRows.find(
 		({ workoutExercise }) => workoutExercise.status !== "completed"
@@ -119,13 +141,15 @@ export default function WorkoutScreen() {
 							borderColor: palette.accent.border,
 						}}
 					>
-						<Text className="text-sm font-bold tabular-nums" style={{ color: palette.accent.DEFAULT }}>
+						<Text
+							className="text-sm font-bold tabular-nums"
+							style={{ color: palette.accent.DEFAULT }}
+						>
 							{timerLabel}
 						</Text>
 					</View>
 				}
 			/>
-
 
 			<ScrollView
 				ref={scrollViewRef}
@@ -138,7 +162,9 @@ export default function WorkoutScreen() {
 
 				{exerciseRows.map(({ workoutExercise }) => {
 					const variant = EXERCISE_VARIANTS_BY_ID[workoutExercise.exerciseVariantId];
-					const name = variant ? t(`exercises.names.${variant.id}`) : workoutExercise.exerciseVariantId;
+					const name = variant
+						? t(`exercises.names.${variant.id}`)
+						: workoutExercise.exerciseVariantId;
 					const isDone = workoutExercise.status === "completed";
 					const isCurrent = workoutExercise.id === currentExerciseId;
 					const icon = variant ? equipmentIcon(variant.equipment) : "barbell-outline";
@@ -147,7 +173,9 @@ export default function WorkoutScreen() {
 						<Pressable
 							key={workoutExercise.id}
 							onPress={() => router.push(`/workout/exercise/${workoutExercise.id}`)}
-							onLayout={(e) => { itemLayoutsRef.current[workoutExercise.id] = e.nativeEvent.layout.y; }}
+							onLayout={(e) => {
+								itemLayoutsRef.current[workoutExercise.id] = e.nativeEvent.layout.y;
+							}}
 							className="active:opacity-70"
 						>
 							<View

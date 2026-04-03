@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import {
 	Dimensions,
 	KeyboardAvoidingView,
@@ -11,7 +12,6 @@ import {
 	View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useTranslation } from "react-i18next";
 import { palette } from "../lib/palette";
 import { radius, spacing } from "../lib/tokens";
 
@@ -58,10 +58,7 @@ export function BottomDrawer({ visible, onClose, onBack, title, children }: Bott
 						className="rounded-t-3xl bg-card"
 						style={{ maxHeight: SCREEN_H * 0.85, paddingBottom: Math.max(insets.bottom, 16) }}
 					>
-						<View
-							className="flex-row items-center gap-3 px-5"
-							style={{ height: HEADER_H }}
-						>
+						<View className="flex-row items-center gap-3 px-5" style={{ height: HEADER_H }}>
 							<Pressable
 								onPress={onBack ?? onClose}
 								className="rounded-full p-2 active:opacity-70"
@@ -85,7 +82,11 @@ export function BottomDrawer({ visible, onClose, onBack, title, children }: Bott
 								keyboardShouldPersistTaps="handled"
 								keyboardDismissMode="interactive"
 								showsVerticalScrollIndicator={false}
-								contentContainerStyle={{ paddingHorizontal: spacing.cardPx, paddingTop: spacing.cardPy, paddingBottom: 8 }}
+								contentContainerStyle={{
+									paddingHorizontal: spacing.cardPx,
+									paddingTop: spacing.cardPy,
+									paddingBottom: 8,
+								}}
 							>
 								{children}
 							</ScrollView>

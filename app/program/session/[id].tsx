@@ -3,23 +3,23 @@ import { eq } from "drizzle-orm";
 import { useLiveQuery } from "drizzle-orm/expo-sqlite";
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Alert, Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useTranslation } from "react-i18next";
 import { BottomDrawer } from "../../../components/BottomDrawer";
 import { Button } from "../../../components/Button";
-import { SearchField } from "../../../components/SearchField";
 import { Chip } from "../../../components/Chip";
 import { EmptyState } from "../../../components/EmptyState";
 import { ExerciseCard } from "../../../components/ExerciseCard";
 import { NumberField } from "../../../components/NumberField";
 import { ScreenHeader } from "../../../components/ScreenHeader";
+import { SearchField } from "../../../components/SearchField";
 import { SortableList } from "../../../components/SortableList";
 import { db } from "../../../db";
 import { sessionExercises, sessions } from "../../../db/schema";
-import { EXERCISE_VARIANTS, EXERCISE_VARIANTS_BY_ID } from "../../../lib/exerciseVariants";
 import { EXERCISE_BASES_BY_ID } from "../../../lib/exerciseBases";
 import type { Equipment, ExerciseVariant } from "../../../lib/exerciseTypes";
+import { EXERCISE_VARIANTS, EXERCISE_VARIANTS_BY_ID } from "../../../lib/exerciseVariants";
 import { palette } from "../../../lib/palette";
 import { radius } from "../../../lib/tokens";
 import { useUnits } from "../../../lib/units";
@@ -55,12 +55,16 @@ export default function SessionScreen() {
 	const [equipmentFilter, setEquipmentFilter] = useState<Equipment | null>(null);
 
 	const { data: sessionData } = useLiveQuery(
-		db.select().from(sessions).where(eq(sessions.id, sessionId)),
+		db.select().from(sessions).where(eq(sessions.id, sessionId))
 	);
 	const session = sessionData?.[0];
 
 	const { data: exerciseRows = [] } = useLiveQuery(
-		db.select().from(sessionExercises).where(eq(sessionExercises.sessionId, sessionId)).orderBy(sessionExercises.order),
+		db
+			.select()
+			.from(sessionExercises)
+			.where(eq(sessionExercises.sessionId, sessionId))
+			.orderBy(sessionExercises.order)
 	);
 
 	function openDrawer() {
@@ -77,24 +81,25 @@ export default function SessionScreen() {
 		setDrawerOpen(true);
 	}
 
-	const openEditDrawer = useCallback((item: ExerciseRow) => {
-		const variant = EXERCISE_VARIANTS_BY_ID[item.exerciseVariantId] ?? null;
-		setEditingId(item.id);
-		setSelected(variant);
-		setIsUnilateral(item.isUnilateral);
-		setSets(item.sets);
-		setReps(item.reps);
-		setWeight(item.defaultWeight != null ? displayWeight(item.defaultWeight) : 0);
-		setRestTime(item.restTime);
-		setStep(2);
-		setDrawerOpen(true);
-	}, [displayWeight]);
+	const openEditDrawer = useCallback(
+		(item: ExerciseRow) => {
+			const variant = EXERCISE_VARIANTS_BY_ID[item.exerciseVariantId] ?? null;
+			setEditingId(item.id);
+			setSelected(variant);
+			setIsUnilateral(item.isUnilateral);
+			setSets(item.sets);
+			setReps(item.reps);
+			setWeight(item.defaultWeight != null ? displayWeight(item.defaultWeight) : 0);
+			setRestTime(item.restTime);
+			setStep(2);
+			setDrawerOpen(true);
+		},
+		[displayWeight]
+	);
 
-	const confirmDelete = useCallback((itemId: number) => {
-		Alert.alert(
-			t("exercises.deleteTitle"),
-			t("exercises.deleteMessage"),
-			[
+	const confirmDelete = useCallback(
+		(itemId: number) => {
+			Alert.alert(t("exercises.deleteTitle"), t("exercises.deleteMessage"), [
 				{ text: t("common.cancel"), style: "cancel" },
 				{
 					text: t("common.delete"),
@@ -103,9 +108,10 @@ export default function SessionScreen() {
 						await db.delete(sessionExercises).where(eq(sessionExercises.id, itemId));
 					},
 				},
-			],
-		);
-	}, [t]);
+			]);
+		},
+		[t]
+	);
 
 	function pickExercise(variant: ExerciseVariant) {
 		setSelected(variant);
@@ -139,7 +145,13 @@ export default function SessionScreen() {
 		try {
 			await db
 				.update(sessionExercises)
-				.set({ isUnilateral, sets, reps, defaultWeight: weight > 0 ? toStorageWeight(weight) : null, restTime })
+				.set({
+					isUnilateral,
+					sets,
+					reps,
+					defaultWeight: weight > 0 ? toStorageWeight(weight) : null,
+					restTime,
+				})
 				.where(eq(sessionExercises.id, editingId));
 			setDrawerOpen(false);
 		} catch (e) {
@@ -151,8 +163,8 @@ export default function SessionScreen() {
 		try {
 			await Promise.all(
 				newData.map((row, index) =>
-					db.update(sessionExercises).set({ order: index }).where(eq(sessionExercises.id, row.id)),
-				),
+					db.update(sessionExercises).set({ order: index }).where(eq(sessionExercises.id, row.id))
+				)
 			);
 		} catch (e) {
 			console.error("Failed to reorder exercises:", e);
@@ -178,7 +190,7 @@ export default function SessionScreen() {
 				/>
 			);
 		},
-		[t, openEditDrawer, confirmDelete],
+		[t, openEditDrawer, confirmDelete]
 	);
 
 	if (!session) return null;
@@ -232,7 +244,9 @@ export default function SessionScreen() {
 				title={
 					step === 1
 						? t("exercises.addExercise")
-						: (selected ? t(`exercises.names.${selected.id}`) : t("exercises.configure"))
+						: selected
+							? t(`exercises.names.${selected.id}`)
+							: t("exercises.configure")
 				}
 			>
 				{step === 1 ? (
@@ -244,20 +258,27 @@ export default function SessionScreen() {
 						/>
 
 						{/* Equipment filters */}
-						<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-							<Pressable
-								onPress={() => setEquipmentFilter(null)}
-								className="active:opacity-70"
-							>
+						<ScrollView
+							horizontal
+							showsHorizontalScrollIndicator={false}
+							contentContainerStyle={{ gap: 8 }}
+						>
+							<Pressable onPress={() => setEquipmentFilter(null)} className="active:opacity-70">
 								<View
 									className="flex-row items-center gap-1.5 rounded-full px-3 py-1.5"
 									style={{
-										backgroundColor: equipmentFilter === null ? palette.primary.DEFAULT : palette.muted.DEFAULT,
+										backgroundColor:
+											equipmentFilter === null ? palette.primary.DEFAULT : palette.muted.DEFAULT,
 									}}
 								>
 									<Text
 										className="text-xs font-semibold"
-										style={{ color: equipmentFilter === null ? palette.primary.foreground : palette.muted.foreground }}
+										style={{
+											color:
+												equipmentFilter === null
+													? palette.primary.foreground
+													: palette.muted.foreground,
+										}}
 									>
 										{t("exercises.equipment.all")}
 									</Text>
@@ -272,17 +293,27 @@ export default function SessionScreen() {
 									<View
 										className="flex-row items-center gap-1.5 rounded-full px-3 py-1.5"
 										style={{
-											backgroundColor: equipmentFilter === eq ? palette.primary.DEFAULT : palette.muted.DEFAULT,
+											backgroundColor:
+												equipmentFilter === eq ? palette.primary.DEFAULT : palette.muted.DEFAULT,
 										}}
 									>
 										<Ionicons
 											name={EQUIPMENT_ICONS[eq]}
 											size={13}
-											color={equipmentFilter === eq ? palette.primary.foreground : palette.muted.foreground}
+											color={
+												equipmentFilter === eq
+													? palette.primary.foreground
+													: palette.muted.foreground
+											}
 										/>
 										<Text
 											className="text-xs font-semibold"
-											style={{ color: equipmentFilter === eq ? palette.primary.foreground : palette.muted.foreground }}
+											style={{
+												color:
+													equipmentFilter === eq
+														? palette.primary.foreground
+														: palette.muted.foreground,
+											}}
 										>
 											{t(`exercises.equipment.${eq}`)}
 										</Text>
@@ -301,15 +332,24 @@ export default function SessionScreen() {
 											onPress={() => pickExercise(variant)}
 											className="active:opacity-70"
 										>
-											<View className="flex-row items-center bg-background px-4 py-3" style={{ borderRadius: radius.md }}>
+											<View
+												className="flex-row items-center bg-background px-4 py-3"
+												style={{ borderRadius: radius.md }}
+											>
 												<View className="flex-1 gap-1.5">
 													<View className="flex-row items-center gap-2">
 														<Text className="text-base font-semibold text-foreground">
 															{t(`exercises.names.${variant.id}`)}
 														</Text>
 														<View className="flex-row items-center gap-1 rounded-full bg-muted px-2 py-0.5">
-															<Ionicons name={EQUIPMENT_ICONS[variant.equipment]} size={11} color={palette.muted.foreground} />
-															<Text className="text-xs text-muted-foreground">{t(`exercises.equipment.${variant.equipment}`)}</Text>
+															<Ionicons
+																name={EQUIPMENT_ICONS[variant.equipment]}
+																size={11}
+																color={palette.muted.foreground}
+															/>
+															<Text className="text-xs text-muted-foreground">
+																{t(`exercises.equipment.${variant.equipment}`)}
+															</Text>
 														</View>
 													</View>
 													<View className="flex-row flex-wrap gap-1">
@@ -318,7 +358,11 @@ export default function SessionScreen() {
 														))}
 													</View>
 												</View>
-												<Ionicons name="chevron-forward" size={18} color={palette.muted.foreground} />
+												<Ionicons
+													name="chevron-forward"
+													size={18}
+													color={palette.muted.foreground}
+												/>
 											</View>
 										</Pressable>
 									);
@@ -335,8 +379,14 @@ export default function SessionScreen() {
 										{t(`exercises.names.${selected.id}`)}
 									</Text>
 									<View className="flex-row items-center gap-1 rounded-full bg-muted px-2 py-0.5">
-										<Ionicons name={EQUIPMENT_ICONS[selected.equipment]} size={11} color={palette.muted.foreground} />
-										<Text className="text-xs text-muted-foreground">{t(`exercises.equipment.${selected.equipment}`)}</Text>
+										<Ionicons
+											name={EQUIPMENT_ICONS[selected.equipment]}
+											size={11}
+											color={palette.muted.foreground}
+										/>
+										<Text className="text-xs text-muted-foreground">
+											{t(`exercises.equipment.${selected.equipment}`)}
+										</Text>
 									</View>
 								</View>
 								<View className="mt-2 flex-row flex-wrap gap-1">
@@ -352,7 +402,9 @@ export default function SessionScreen() {
 								className="flex-row items-center justify-between rounded-2xl px-5 py-4"
 								style={{ backgroundColor: palette.background.DEFAULT }}
 							>
-								<Text className="text-base font-medium text-foreground">{t("exercises.unilateral")}</Text>
+								<Text className="text-base font-medium text-foreground">
+									{t("exercises.unilateral")}
+								</Text>
 								<Switch
 									value={isUnilateral}
 									onValueChange={setIsUnilateral}
@@ -364,10 +416,22 @@ export default function SessionScreen() {
 
 						<View className="flex-row gap-3">
 							<View className="flex-1">
-								<NumberField label={t("exercises.sets")} value={sets} onValueChange={setSets} min={1} step={1} />
+								<NumberField
+									label={t("exercises.sets")}
+									value={sets}
+									onValueChange={setSets}
+									min={1}
+									step={1}
+								/>
 							</View>
 							<View className="flex-1">
-								<NumberField label={t("exercises.reps")} value={reps} onValueChange={setReps} min={1} step={1} />
+								<NumberField
+									label={t("exercises.reps")}
+									value={reps}
+									onValueChange={setReps}
+									min={1}
+									step={1}
+								/>
 							</View>
 						</View>
 						<NumberField

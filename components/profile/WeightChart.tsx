@@ -20,7 +20,11 @@ export function WeightChart({ data }: Props) {
 		return (
 			<View
 				className="items-center justify-center"
-				style={{ backgroundColor: palette.card.DEFAULT, height: CHART_HEIGHT + PAD.top + PAD.bottom, borderRadius: radius.lg }}
+				style={{
+					backgroundColor: palette.card.DEFAULT,
+					height: CHART_HEIGHT + PAD.top + PAD.bottom,
+					borderRadius: radius.lg,
+				}}
 			>
 				<Text style={{ color: palette.muted.foreground }}>{t("profile.noData")}</Text>
 			</View>
@@ -28,7 +32,10 @@ export function WeightChart({ data }: Props) {
 	}
 
 	return (
-		<View className="overflow-hidden" style={{ backgroundColor: palette.card.DEFAULT, borderRadius: radius.lg }}>
+		<View
+			className="overflow-hidden"
+			style={{ backgroundColor: palette.card.DEFAULT, borderRadius: radius.lg }}
+		>
 			<Text
 				className="text-xs font-semibold uppercase tracking-widest px-4 pt-4 mb-1"
 				style={{ color: palette.muted.foreground }}
@@ -103,7 +110,11 @@ function ChartContent({ data }: { data: DataPoint[] }) {
 	const selected = selectedIndex != null ? chart.points[selectedIndex] : null;
 
 	return (
-		<Pressable style={{ flex: 1 }} onPress={() => setSelectedIndex(null)} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
+		<Pressable
+			style={{ flex: 1 }}
+			onPress={() => setSelectedIndex(null)}
+			onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
+		>
 			<Svg width={width} height={CHART_HEIGHT}>
 				{chart.yTicks.map((v) => (
 					<SvgLine

@@ -13,12 +13,7 @@ export type MuscleGroup =
 	| "adductors"
 	| "abductors";
 
-export type Equipment =
-	| "dumbbell"
-	| "barbell"
-	| "machine"
-	| "cable"
-	| "bodyweight";
+export type Equipment = "dumbbell" | "barbell" | "machine" | "cable" | "bodyweight";
 
 export type ExerciseBase = {
 	id: string;

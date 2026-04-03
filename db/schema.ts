@@ -1,4 +1,4 @@
-import { int, real, sqliteTable, text, unique, uniqueIndex, index } from "drizzle-orm/sqlite-core";
+import { index, int, real, sqliteTable, text, unique, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 export const programs = sqliteTable("programs", {
 	id: int("id").primaryKey({ autoIncrement: true }),
@@ -50,7 +50,7 @@ export const workoutSessions = sqliteTable(
 			.notNull()
 			.default("in_progress"),
 	},
-	(t) => [index("workout_sessions_date_idx").on(t.date)],
+	(t) => [index("workout_sessions_date_idx").on(t.date)]
 );
 
 export const workoutExercises = sqliteTable(
@@ -76,7 +76,7 @@ export const workoutExercises = sqliteTable(
 			.notNull()
 			.default("pending"),
 	},
-	(t) => [index("workout_exercises_variant_idx").on(t.exerciseVariantId)],
+	(t) => [index("workout_exercises_variant_idx").on(t.exerciseVariantId)]
 );
 
 export const workoutSets = sqliteTable(
@@ -93,9 +93,7 @@ export const workoutSets = sqliteTable(
 		weight: real("weight"),
 		completedAt: text("completed_at").notNull(),
 	},
-	(t) => [
-		uniqueIndex("workout_sets_exercise_set_idx").on(t.workoutExerciseId, t.setIndex),
-	],
+	(t) => [uniqueIndex("workout_sets_exercise_set_idx").on(t.workoutExerciseId, t.setIndex)]
 );
 
 // ─── Profile ────────────────────────────────────────────────────────────────
@@ -116,7 +114,7 @@ export const weightLogs = sqliteTable(
 		weightKg: real("weight_kg").notNull(),
 		createdAt: text("created_at").$defaultFn(() => new Date().toISOString()),
 	},
-	(t) => [uniqueIndex("weight_logs_date_idx").on(t.date)],
+	(t) => [uniqueIndex("weight_logs_date_idx").on(t.date)]
 );
 
 export const bodyMeasurements = sqliteTable(
@@ -135,13 +133,24 @@ export const bodyMeasurements = sqliteTable(
 		calf: real("calf"),
 		createdAt: text("created_at").$defaultFn(() => new Date().toISOString()),
 	},
-	(t) => [uniqueIndex("body_measurements_date_idx").on(t.date)],
+	(t) => [uniqueIndex("body_measurements_date_idx").on(t.date)]
 );
 
 export const goals = sqliteTable("goals", {
 	id: int("id").primaryKey({ autoIncrement: true }),
 	type: text("type", {
-		enum: ["weight", "bodyFat", "shoulders", "chest", "waist", "hips", "neck", "arms", "thigh", "calf"],
+		enum: [
+			"weight",
+			"bodyFat",
+			"shoulders",
+			"chest",
+			"waist",
+			"hips",
+			"neck",
+			"arms",
+			"thigh",
+			"calf",
+		],
 	}).notNull(),
 	targetValue: real("target_value").notNull(),
 	startValue: real("start_value").notNull(),
@@ -155,6 +164,36 @@ export const goals = sqliteTable("goals", {
 		.$onUpdateFn(() => new Date().toISOString()),
 });
 
+// ─── Gamification ─────────────────────────────────────────────────────────────
+
+export const xpLogs = sqliteTable(
+	"xp_logs",
+	{
+		id: int("id").primaryKey({ autoIncrement: true }),
+		amount: int("amount").notNull(),
+		source: text("source", { enum: ["workout", "hydration", "achievement"] }).notNull(),
+		sourceId: int("source_id"),
+		date: text("date").notNull(),
+		createdAt: text("created_at").$defaultFn(() => new Date().toISOString()),
+	},
+	(t) => [uniqueIndex("xp_logs_source_idx").on(t.source, t.sourceId)]
+);
+
+export const userLevel = sqliteTable("user_level", {
+	id: int("id").primaryKey(),
+	totalXp: int("total_xp").notNull().default(0),
+	level: int("level").notNull().default(1),
+	updatedAt: text("updated_at")
+		.$defaultFn(() => new Date().toISOString())
+		.$onUpdateFn(() => new Date().toISOString()),
+});
+
+export const userAchievements = sqliteTable("user_achievements", {
+	id: int("id").primaryKey({ autoIncrement: true }),
+	achievementId: text("achievement_id").notNull().unique(),
+	unlockedAt: text("unlocked_at").notNull(),
+});
+
 // ─── Hydration ─────────────────────────────────────────────────────────────────
 
 export const hydrationLogs = sqliteTable(
@@ -166,5 +205,5 @@ export const hydrationLogs = sqliteTable(
 		goalMl: real("goal_ml").notNull(),
 		createdAt: text("created_at").$defaultFn(() => new Date().toISOString()),
 	},
-	(t) => [uniqueIndex("hydration_logs_date_idx").on(t.date)],
+	(t) => [uniqueIndex("hydration_logs_date_idx").on(t.date)]
 );

@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { View } from "react-native";
+import { upsertHeight } from "../../lib/profileQueries";
+import { useUnits } from "../../lib/units";
 import { BottomDrawer } from "../BottomDrawer";
 import { Button } from "../Button";
 import { NumberField } from "../NumberField";
-import { upsertHeight } from "../../lib/profileQueries";
-import { useUnits } from "../../lib/units";
 
 type Props = {
 	visible: boolean;
@@ -15,9 +15,12 @@ type Props = {
 
 export function EditHeightDrawer({ visible, onClose, currentHeight }: Props) {
 	const { t } = useTranslation();
-	const { displayLength, toStorageLength, lengthUnit, system, heightMin, heightMax, heightStep } = useUnits();
+	const { displayLength, toStorageLength, lengthUnit, system, heightMin, heightMax, heightStep } =
+		useUnits();
 	const defaultHeightCm = currentHeight || 170;
-	const [height, setHeight] = useState(() => system === "imperial" ? displayLength(defaultHeightCm) : defaultHeightCm);
+	const [height, setHeight] = useState(() =>
+		system === "imperial" ? displayLength(defaultHeightCm) : defaultHeightCm
+	);
 	const [saving, setSaving] = useState(false);
 
 	useEffect(() => {
@@ -50,7 +53,13 @@ export function EditHeightDrawer({ visible, onClose, currentHeight }: Props) {
 					step={heightStep}
 					endAdornment={lengthUnit}
 				/>
-				<Button variant="glow" label={t("profile.save")} onPress={handleSave} loading={saving} fullWidth />
+				<Button
+					variant="glow"
+					label={t("profile.save")}
+					onPress={handleSave}
+					loading={saving}
+					fullWidth
+				/>
 			</View>
 		</BottomDrawer>
 	);

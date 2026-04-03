@@ -6,6 +6,7 @@ import { Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { IconButton } from "../../components/IconButton";
 import { ProfileTabSelector } from "../../components/ProfileTabSelector";
+import { AchievementsTab } from "../../components/profile/AchievementsTab";
 import { BodyTab } from "../../components/profile/BodyTab";
 import { GoalsTab } from "../../components/profile/GoalsTab";
 import { RecordsTab } from "../../components/profile/RecordsTab";
@@ -15,6 +16,7 @@ const TABS = [
 	{ labelKey: "profile.goals", icon: "flag-outline" as const },
 	{ labelKey: "profile.body", icon: "body-outline" as const },
 	{ labelKey: "profile.records", icon: "trophy-outline" as const },
+	{ labelKey: "achievements.title", icon: "medal-outline" as const },
 ];
 
 export default function ProfileScreen() {
@@ -43,11 +45,7 @@ export default function ProfileScreen() {
 
 			{/* Tab selector */}
 			<View className="px-6 mb-4">
-				<ProfileTabSelector
-					tabs={tabs}
-					activeIndex={activeTab}
-					onChangeIndex={setActiveTab}
-				/>
+				<ProfileTabSelector tabs={tabs} activeIndex={activeTab} onChangeIndex={setActiveTab} />
 			</View>
 
 			{/* Tab content */}
@@ -55,6 +53,7 @@ export default function ProfileScreen() {
 				{activeTab === 0 && <GoalsTab />}
 				{activeTab === 1 && <BodyTab />}
 				{activeTab === 2 && <RecordsTab />}
+				{activeTab === 3 && <AchievementsTab />}
 			</View>
 		</SafeAreaView>
 	);

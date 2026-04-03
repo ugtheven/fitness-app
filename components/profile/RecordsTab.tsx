@@ -7,10 +7,10 @@ import { EXERCISE_BASES_BY_ID } from "../../lib/exerciseBases";
 import type { Equipment } from "../../lib/exerciseTypes";
 import { EXERCISE_VARIANTS_BY_ID } from "../../lib/exerciseVariants";
 import { palette } from "../../lib/palette";
-import { EmptyState } from "../EmptyState";
-import { radius } from "../../lib/tokens";
 import { getAllExercisePRsQuery } from "../../lib/profileQueries";
+import { radius } from "../../lib/tokens";
 import { useUnits } from "../../lib/units";
+import { EmptyState } from "../EmptyState";
 
 function equipmentIcon(equipment: Equipment): keyof typeof Ionicons.glyphMap {
 	switch (equipment) {
@@ -31,7 +31,10 @@ export function RecordsTab() {
 	const { data: prs = [] } = useLiveQuery(getAllExercisePRsQuery());
 
 	const grouped = useMemo(() => {
-		const groups = new Map<string, { exerciseVariantId: string; name: string; equipment: Equipment; maxWeight: number }[]>();
+		const groups = new Map<
+			string,
+			{ exerciseVariantId: string; name: string; equipment: Equipment; maxWeight: number }[]
+		>();
 
 		for (const pr of prs) {
 			const variant = EXERCISE_VARIANTS_BY_ID[pr.exerciseVariantId];
@@ -88,7 +91,11 @@ export function RecordsTab() {
 								className="w-9 h-9 rounded-full items-center justify-center"
 								style={{ backgroundColor: palette.muted.DEFAULT }}
 							>
-								<Ionicons name={equipmentIcon(ex.equipment)} size={18} color={palette.muted.foreground} />
+								<Ionicons
+									name={equipmentIcon(ex.equipment)}
+									size={18}
+									color={palette.muted.foreground}
+								/>
 							</View>
 							<View className="flex-1">
 								<Text className="text-base font-semibold text-foreground" numberOfLines={1}>
@@ -103,7 +110,9 @@ export function RecordsTab() {
 									<Text className="text-xl font-bold text-foreground">
 										{displayWeight(ex.maxWeight)}
 									</Text>
-									<Text className="text-xs ml-1" style={{ color: palette.muted.foreground }}>{weightUnit}</Text>
+									<Text className="text-xs ml-1" style={{ color: palette.muted.foreground }}>
+										{weightUnit}
+									</Text>
 								</View>
 								<View className="flex-row items-center gap-1 mt-0.5">
 									<Ionicons name="flash" size={10} color={palette.accent.DEFAULT} />

@@ -47,8 +47,8 @@ export async function getLastSets(exerciseVariantId: string): Promise<PrefillSet
 			and(
 				eq(workoutExercises.exerciseVariantId, exerciseVariantId),
 				eq(workoutExercises.status, "completed"),
-				eq(workoutSessions.status, "completed"),
-			),
+				eq(workoutSessions.status, "completed")
+			)
 		)
 		.orderBy(desc(workoutSessions.startedAt))
 		.limit(1);
@@ -68,8 +68,8 @@ export async function getLastSets(exerciseVariantId: string): Promise<PrefillSet
 		.where(
 			and(
 				eq(workoutExercises.workoutSessionId, lastSession[0].workoutSessionId),
-				eq(workoutExercises.exerciseVariantId, exerciseVariantId),
-			),
+				eq(workoutExercises.exerciseVariantId, exerciseVariantId)
+			)
 		)
 		.orderBy(workoutSets.setIndex);
 
@@ -91,8 +91,8 @@ export async function getExercisePR(exerciseVariantId: string): Promise<Exercise
 			and(
 				eq(workoutExercises.exerciseVariantId, exerciseVariantId),
 				eq(workoutSessions.status, "completed"),
-				isNotNull(workoutSets.weight),
-			),
+				isNotNull(workoutSets.weight)
+			)
 		);
 
 	const maxWeight = rows[0]?.maxWeight;
@@ -105,7 +105,9 @@ export async function getExercisePR(exerciseVariantId: string): Promise<Exercise
  * Returns exercise history grouped by session (max weight per session).
  * Used for the exercise history sheet in Activity.
  */
-export async function getExerciseHistory(exerciseVariantId: string): Promise<ExerciseHistoryEntry[]> {
+export async function getExerciseHistory(
+	exerciseVariantId: string
+): Promise<ExerciseHistoryEntry[]> {
 	return db
 		.select({
 			startedAt: workoutSessions.startedAt,
@@ -118,8 +120,8 @@ export async function getExerciseHistory(exerciseVariantId: string): Promise<Exe
 			and(
 				eq(workoutExercises.exerciseVariantId, exerciseVariantId),
 				eq(workoutSessions.status, "completed"),
-				isNotNull(workoutSets.weight),
-			),
+				isNotNull(workoutSets.weight)
+			)
 		)
 		.groupBy(workoutSessions.id)
 		.orderBy(desc(workoutSessions.startedAt));
@@ -194,16 +196,25 @@ export async function getExerciseHistoryDetailed(exerciseVariantId: string) {
 		.where(
 			and(
 				eq(workoutExercises.exerciseVariantId, exerciseVariantId),
-				eq(workoutSessions.status, "completed"),
-			),
+				eq(workoutSessions.status, "completed")
+			)
 		)
 		.orderBy(desc(workoutSessions.startedAt), workoutSets.setIndex);
 
 	// Group by session
-	const sessionsMap = new Map<number, {
-		startedAt: string;
-		sets: { reps: number | null; repsLeft: number | null; repsRight: number | null; weight: number | null; isUnilateral: boolean }[];
-	}>();
+	const sessionsMap = new Map<
+		number,
+		{
+			startedAt: string;
+			sets: {
+				reps: number | null;
+				repsLeft: number | null;
+				repsRight: number | null;
+				weight: number | null;
+				isUnilateral: boolean;
+			}[];
+		}
+	>();
 
 	for (const row of rows) {
 		let session = sessionsMap.get(row.workoutSessionId);
@@ -235,8 +246,8 @@ export async function getExerciseTotalSets(exerciseVariantId: string): Promise<n
 		.where(
 			and(
 				eq(workoutExercises.exerciseVariantId, exerciseVariantId),
-				eq(workoutSessions.status, "completed"),
-			),
+				eq(workoutSessions.status, "completed")
+			)
 		);
 
 	return rows[0]?.count ?? 0;
@@ -246,11 +257,13 @@ export async function getExerciseTotalSets(exerciseVariantId: string): Promise<n
  * Returns PRs beaten during a given workout session.
  * Compares each exercise's max weight in this session vs all previous sessions.
  */
-export async function getSessionPRs(workoutSessionId: number): Promise<{
-	exerciseVariantId: string;
-	newWeight: number;
-	previousWeight: number | null;
-}[]> {
+export async function getSessionPRs(workoutSessionId: number): Promise<
+	{
+		exerciseVariantId: string;
+		newWeight: number;
+		previousWeight: number | null;
+	}[]
+> {
 	// Get max weight per exercise in this session
 	const sessionMaxes = await db
 		.select({
@@ -260,10 +273,7 @@ export async function getSessionPRs(workoutSessionId: number): Promise<{
 		.from(workoutSets)
 		.innerJoin(workoutExercises, eq(workoutSets.workoutExerciseId, workoutExercises.id))
 		.where(
-			and(
-				eq(workoutExercises.workoutSessionId, workoutSessionId),
-				isNotNull(workoutSets.weight),
-			),
+			and(eq(workoutExercises.workoutSessionId, workoutSessionId), isNotNull(workoutSets.weight))
 		)
 		.groupBy(workoutExercises.exerciseVariantId);
 
@@ -285,8 +295,8 @@ export async function getSessionPRs(workoutSessionId: number): Promise<{
 					eq(workoutExercises.exerciseVariantId, exerciseVariantId),
 					eq(workoutSessions.status, "completed"),
 					sql`${workoutExercises.workoutSessionId} != ${workoutSessionId}`,
-					isNotNull(workoutSets.weight),
-				),
+					isNotNull(workoutSets.weight)
+				)
 			);
 
 		const previousMax = prev?.maxWeight ?? null;
@@ -309,9 +319,8 @@ export async function getSessionPRs(workoutSessionId: number): Promise<{
  */
 export function getWorkoutsByMonthQuery(year: number, month: number) {
 	const startDate = `${year}-${String(month + 1).padStart(2, "0")}-01`;
-	const endDate = month === 11
-		? `${year + 1}-01-01`
-		: `${year}-${String(month + 2).padStart(2, "0")}-01`;
+	const endDate =
+		month === 11 ? `${year + 1}-01-01` : `${year}-${String(month + 2).padStart(2, "0")}-01`;
 
 	return db
 		.select({
@@ -335,8 +344,8 @@ export function getWorkoutsByMonthQuery(year: number, month: number) {
 			and(
 				eq(workoutSessions.status, "completed"),
 				gte(workoutSessions.date, startDate),
-				lt(workoutSessions.date, endDate),
-			),
+				lt(workoutSessions.date, endDate)
+			)
 		)
 		.groupBy(workoutSessions.id)
 		.orderBy(desc(workoutSessions.startedAt));

@@ -32,18 +32,9 @@ export function ProfileTabSelector({ tabs, activeIndex, onChangeIndex }: Props) 
 	}));
 
 	return (
-		<View
-			style={styles.container}
-			onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}
-		>
+		<View style={styles.container} onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}>
 			{containerWidth > 0 && (
-				<Animated.View
-					style={[
-						styles.lens,
-						{ width: tabWidth - 6, left: 3 },
-						lensStyle,
-					]}
-				/>
+				<Animated.View style={[styles.lens, { width: tabWidth - 6, left: 3 }, lensStyle]} />
 			)}
 			{tabs.map((tab, i) => {
 				const isActive = i === activeIndex;
@@ -87,13 +78,13 @@ const styles = StyleSheet.create({
 	},
 	tab: {
 		flex: 1,
-		flexDirection: "row",
+		flexDirection: "column",
 		alignItems: "center",
 		justifyContent: "center",
-		gap: 6,
+		gap: 4,
 		paddingVertical: 10,
 	},
 	tabLabel: {
-		fontSize: 14,
+		fontSize: 11,
 	},
 });

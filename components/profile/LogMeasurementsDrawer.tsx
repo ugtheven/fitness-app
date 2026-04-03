@@ -1,18 +1,27 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { View } from "react-native";
+import { insertBodyMeasurements } from "../../lib/profileQueries";
+import { useUnits } from "../../lib/units";
 import { BottomDrawer } from "../BottomDrawer";
 import { Button } from "../Button";
 import { NumberField } from "../NumberField";
-import { insertBodyMeasurements } from "../../lib/profileQueries";
-import { useUnits } from "../../lib/units";
 
 function todayStr(): string {
 	const d = new Date();
 	return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-type MeasurementKey = "bodyFat" | "shoulders" | "chest" | "waist" | "hips" | "neck" | "arms" | "thigh" | "calf";
+type MeasurementKey =
+	| "bodyFat"
+	| "shoulders"
+	| "chest"
+	| "waist"
+	| "hips"
+	| "neck"
+	| "arms"
+	| "thigh"
+	| "calf";
 
 const FIELDS: { key: MeasurementKey; step: number }[] = [
 	{ key: "bodyFat", step: 0.1 },
@@ -39,7 +48,7 @@ export function LogMeasurementsDrawer({ visible, onClose, lastValues }: Props) {
 		const init: Record<string, number> = {};
 		for (const f of FIELDS) {
 			const raw = lastValues[f.key] ?? 0;
-			init[f.key] = f.key === "bodyFat" ? raw : (raw > 0 ? displayLength(raw) : 0);
+			init[f.key] = f.key === "bodyFat" ? raw : raw > 0 ? displayLength(raw) : 0;
 		}
 		return init as Record<MeasurementKey, number>;
 	}, [lastValues, displayLength]);
@@ -88,7 +97,13 @@ export function LogMeasurementsDrawer({ visible, onClose, lastValues }: Props) {
 					/>
 				))}
 				<View className="mt-2">
-					<Button variant="glow" label={t("profile.save")} onPress={handleSave} loading={saving} fullWidth />
+					<Button
+						variant="glow"
+						label={t("profile.save")}
+						onPress={handleSave}
+						loading={saving}
+						fullWidth
+					/>
 				</View>
 			</View>
 		</BottomDrawer>

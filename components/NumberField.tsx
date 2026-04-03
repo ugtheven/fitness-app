@@ -67,7 +67,10 @@ export function NumberField({
 	return (
 		<View className="gap-1.5">
 			{label && <Text className="text-sm font-medium text-foreground">{label}</Text>}
-			<View className="flex-row items-center gap-2 border border-border bg-background p-2" style={{ borderRadius: radius.lg }}>
+			<View
+				className="flex-row items-center gap-2 border border-border bg-background p-2"
+				style={{ borderRadius: radius.lg }}
+			>
 				{/* − */}
 				<Pressable
 					onPress={decrement}

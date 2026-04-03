@@ -8,6 +8,7 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from "rea
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BottomDrawer } from "../../components/BottomDrawer";
 import { Button } from "../../components/Button";
+import { HomeHeader } from "../../components/HomeHeader";
 import { HydrationWidget } from "../../components/HydrationWidget";
 import { db } from "../../db";
 import {
@@ -57,14 +58,14 @@ export default function HomeScreen() {
 			.limit(1);
 
 		if (inProgress.length > 0) {
-			Alert.alert(
-				t("home.replaceTitle"),
-				t("home.replaceMessage"),
-				[
-					{ text: t("common.cancel"), style: "cancel" },
-					{ text: t("home.replaceConfirm"), style: "destructive", onPress: () => launchSession(sessionId) },
-				],
-			);
+			Alert.alert(t("home.replaceTitle"), t("home.replaceMessage"), [
+				{ text: t("common.cancel"), style: "cancel" },
+				{
+					text: t("home.replaceConfirm"),
+					style: "destructive",
+					onPress: () => launchSession(sessionId),
+				},
+			]);
 			return;
 		}
 
@@ -78,8 +79,7 @@ export default function HomeScreen() {
 				// Design choice: in-progress sessions are NOT resumable. Starting a new
 				// session silently destroys any interrupted one (workoutExercises +
 				// workoutSets are cascade-deleted).
-				await tx.delete(workoutSessions)
-					.where(eq(workoutSessions.status, "in_progress"));
+				await tx.delete(workoutSessions).where(eq(workoutSessions.status, "in_progress"));
 
 				// Read exercises inside the transaction for atomicity
 				const exercises = await tx
@@ -95,7 +95,13 @@ export default function HomeScreen() {
 				const localDate = `${nowDate.getFullYear()}-${String(nowDate.getMonth() + 1).padStart(2, "0")}-${String(nowDate.getDate()).padStart(2, "0")}`;
 				const [workoutSession] = await tx
 					.insert(workoutSessions)
-					.values({ sessionId, programId: activeProgram?.id ?? null, startedAt: now, date: localDate, status: "in_progress" })
+					.values({
+						sessionId,
+						programId: activeProgram?.id ?? null,
+						startedAt: now,
+						date: localDate,
+						status: "in_progress",
+					})
 					.returning();
 
 				await tx.insert(workoutExercises).values(
@@ -132,18 +138,20 @@ export default function HomeScreen() {
 		<SafeAreaView className="flex-1 bg-background" edges={["top"]}>
 			<ScrollView
 				className="flex-1"
-				contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 8, paddingBottom: spacing.navbarClearance, gap: 16 }}
+				contentContainerStyle={{
+					paddingHorizontal: 24,
+					paddingTop: 8,
+					paddingBottom: spacing.navbarClearance,
+					gap: 16,
+				}}
 				showsVerticalScrollIndicator={false}
 			>
-				<Text className="text-2xl font-bold text-foreground">{t("tabs.home")}</Text>
+				<HomeHeader />
 
 				<HydrationWidget />
 
 				{activeProgram ? (
-					<Pressable
-						onPress={() => setDrawerVisible(true)}
-						className="active:opacity-70"
-					>
+					<Pressable onPress={() => setDrawerVisible(true)} className="active:opacity-70">
 						<View
 							className="flex-row items-center gap-3 px-5 py-4"
 							style={{
@@ -214,9 +222,7 @@ export default function HomeScreen() {
 								style={{ backgroundColor: palette.muted.DEFAULT }}
 							>
 								<View className="flex-1">
-									<Text className="text-base font-semibold text-foreground">
-										{session.name}
-									</Text>
+									<Text className="text-base font-semibold text-foreground">{session.name}</Text>
 									<Text className="text-xs mt-0.5" style={{ color: palette.muted.foreground }}>
 										{t("sessions.exerciseCount", { count: exerciseCount })}
 									</Text>

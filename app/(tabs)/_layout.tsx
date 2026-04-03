@@ -1,6 +1,6 @@
-import { Navbar } from "../../components/Navbar";
 import { Tabs } from "expo-router";
 import { useTranslation } from "react-i18next";
+import { Navbar } from "../../components/Navbar";
 
 export default function TabLayout() {
 	const { t } = useTranslation();

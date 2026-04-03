@@ -43,12 +43,17 @@ function formatDuration(startedAt: string, endedAt: string | null): string {
 	return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
-function formatSetLine(set: {
-	reps: number | null;
-	repsLeft: number | null;
-	repsRight: number | null;
-	weight: number | null;
-}, isUnilateral: boolean, displayWeight: (kg: number) => number, weightUnit: string): string {
+function formatSetLine(
+	set: {
+		reps: number | null;
+		repsLeft: number | null;
+		repsRight: number | null;
+		weight: number | null;
+	},
+	isUnilateral: boolean,
+	displayWeight: (kg: number) => number,
+	weightUnit: string
+): string {
 	const repsStr = isUnilateral
 		? `${set.repsLeft ?? 0}L / ${set.repsRight ?? 0}R`
 		: `${set.reps ?? 0}`;
@@ -75,7 +80,7 @@ function computeVolume(exercises: Awaited<ReturnType<typeof getWorkoutDetail>>):
 	let total = 0;
 	for (const ex of exercises) {
 		for (const set of ex.sets) {
-			const reps = set.reps ?? ((set.repsLeft ?? 0) + (set.repsRight ?? 0));
+			const reps = set.reps ?? (set.repsLeft ?? 0) + (set.repsRight ?? 0);
 			total += reps * (set.weight ?? 0);
 		}
 	}
@@ -103,14 +108,18 @@ export default function WorkoutDetailScreen() {
 	const [startedAt, setStartedAt] = useState<string>("");
 	const [endedAt, setEndedAt] = useState<string | null>(null);
 	const [exercises, setExercises] = useState<Awaited<ReturnType<typeof getWorkoutDetail>>>([]);
-	const [prMap, setPrMap] = useState<Map<string, { newWeight: number; previousWeight: number | null }>>(new Map());
+	const [prMap, setPrMap] = useState<
+		Map<string, { newWeight: number; previousWeight: number | null }>
+	>(new Map());
 
 	// Exercise history sheet state
 	const [historySheet, setHistorySheet] = useState<ExerciseHistorySheet | null>(null);
 	const [historyLoading, setHistoryLoading] = useState(false);
 	const [historyPR, setHistoryPR] = useState<number | null>(null);
 	const [historyTotalSets, setHistoryTotalSets] = useState(0);
-	const [historySessions, setHistorySessions] = useState<Awaited<ReturnType<typeof getExerciseHistoryDetailed>>>([]);
+	const [historySessions, setHistorySessions] = useState<
+		Awaited<ReturnType<typeof getExerciseHistoryDetailed>>
+	>([]);
 
 	useEffect(() => {
 		async function load() {
@@ -133,7 +142,10 @@ export default function WorkoutDetailScreen() {
 			setExercises(detail);
 			const map = new Map<string, { newWeight: number; previousWeight: number | null }>();
 			for (const pr of prs) {
-				map.set(pr.exerciseVariantId, { newWeight: pr.newWeight, previousWeight: pr.previousWeight });
+				map.set(pr.exerciseVariantId, {
+					newWeight: pr.newWeight,
+					previousWeight: pr.previousWeight,
+				});
 			}
 			setPrMap(map);
 			setIsLoading(false);
@@ -167,13 +179,16 @@ export default function WorkoutDetailScreen() {
 
 	const totalVolume = computeVolume(exercises);
 	const totalSets = exercises.reduce((sum, ex) => sum + ex.sets.length, 0);
-	const volumeLabel = totalVolume > 0 ? `${Math.round(displayWeight(totalVolume))} ${weightUnit}` : "—";
+	const volumeLabel =
+		totalVolume > 0 ? `${Math.round(displayWeight(totalVolume))} ${weightUnit}` : "—";
 
 	return (
 		<SafeAreaView className="flex-1 bg-background" edges={["top"]}>
 			<ScreenHeader
 				title={sessionName ?? t("activity.deletedSession")}
-				subtitle={startedAt ? `${formatDate(startedAt)} · ${formatDuration(startedAt, endedAt)}` : undefined}
+				subtitle={
+					startedAt ? `${formatDate(startedAt)} · ${formatDuration(startedAt, endedAt)}` : undefined
+				}
 				onBack={() => router.back()}
 			/>
 
@@ -222,7 +237,10 @@ export default function WorkoutDetailScreen() {
 											color={pr ? palette.accent.DEFAULT : palette.muted.foreground}
 										/>
 									</View>
-									<Text className="flex-1 text-base font-semibold text-foreground" numberOfLines={1}>
+									<Text
+										className="flex-1 text-base font-semibold text-foreground"
+										numberOfLines={1}
+									>
 										{name}
 									</Text>
 									<Ionicons name="chevron-forward" size={18} color={palette.muted.foreground} />
@@ -239,7 +257,10 @@ export default function WorkoutDetailScreen() {
 										</Text>
 										<Text className="text-xs" style={{ color: palette.muted.foreground }}>
 											{pr.previousWeight != null
-												? t("pr.previousRecord", { weight: displayWeight(pr.previousWeight), unit: weightUnit })
+												? t("pr.previousRecord", {
+														weight: displayWeight(pr.previousWeight),
+														unit: weightUnit,
+													})
 												: t("pr.firstRecord")}
 										</Text>
 									</View>
@@ -249,7 +270,10 @@ export default function WorkoutDetailScreen() {
 								<View className="gap-1.5 pl-11">
 									{ex.sets.map((set, i) => (
 										<View key={`${ex.id}-${set.setIndex}`} className="flex-row items-center gap-2">
-											<Text className="text-xs font-semibold w-5" style={{ color: palette.muted.foreground }}>
+											<Text
+												className="text-xs font-semibold w-5"
+												style={{ color: palette.muted.foreground }}
+											>
 												{i + 1}
 											</Text>
 											<Text className="text-sm text-foreground">
@@ -258,7 +282,9 @@ export default function WorkoutDetailScreen() {
 										</View>
 									))}
 									{ex.sets.length === 0 && (
-										<Text className="text-xs" style={{ color: palette.muted.foreground }}>—</Text>
+										<Text className="text-xs" style={{ color: palette.muted.foreground }}>
+											—
+										</Text>
 									)}
 								</View>
 							</View>
@@ -282,27 +308,42 @@ export default function WorkoutDetailScreen() {
 						{/* Stats */}
 						<View className="flex-row gap-3">
 							{historyPR != null && (
-								<StatPill label={t("exerciseHistory.maxWeight")} value={`${displayWeight(historyPR)} ${weightUnit}`} />
+								<StatPill
+									label={t("exerciseHistory.maxWeight")}
+									value={`${displayWeight(historyPR)} ${weightUnit}`}
+								/>
 							)}
 							<StatPill label={t("exerciseHistory.totalSets")} value={String(historyTotalSets)} />
 						</View>
 
 						{/* Session history */}
 						{historySessions.length === 0 ? (
-							<Text className="text-sm text-center py-4" style={{ color: palette.muted.foreground }}>
+							<Text
+								className="text-sm text-center py-4"
+								style={{ color: palette.muted.foreground }}
+							>
 								{t("exerciseHistory.noHistory")}
 							</Text>
 						) : (
 							<View className="gap-4">
 								{historySessions.map((session, idx) => (
 									<View key={`${session.startedAt}-${idx}`}>
-										<Text className="text-xs font-semibold mb-2" style={{ color: palette.muted.foreground }}>
+										<Text
+											className="text-xs font-semibold mb-2"
+											style={{ color: palette.muted.foreground }}
+										>
 											{formatDate(session.startedAt)}
 										</Text>
 										<View className="gap-1">
 											{session.sets.map((set, i) => (
-												<View key={`${session.startedAt}-${i}`} className="flex-row items-center gap-2">
-													<Text className="text-xs font-semibold w-5" style={{ color: palette.muted.foreground }}>
+												<View
+													key={`${session.startedAt}-${i}`}
+													className="flex-row items-center gap-2"
+												>
+													<Text
+														className="text-xs font-semibold w-5"
+														style={{ color: palette.muted.foreground }}
+													>
 														{i + 1}
 													</Text>
 													<Text className="text-sm text-foreground">

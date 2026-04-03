@@ -13,7 +13,16 @@ import { Button } from "../Button";
 import { IconButton } from "../IconButton";
 import { LogSingleMeasurementDrawer } from "./LogSingleMeasurementDrawer";
 
-type MeasurementKey = "bodyFat" | "shoulders" | "chest" | "waist" | "hips" | "neck" | "arms" | "thigh" | "calf";
+type MeasurementKey =
+	| "bodyFat"
+	| "shoulders"
+	| "chest"
+	| "waist"
+	| "hips"
+	| "neck"
+	| "arms"
+	| "thigh"
+	| "calf";
 
 type Props = {
 	visible: boolean;
@@ -51,33 +60,36 @@ export function MeasurementDetailDrawer({ visible, onClose, measurementKey }: Pr
 	const delta = latest && first ? Math.round((latest.value - first.value) * 10) / 10 : null;
 
 	function handleDelete(date: string) {
-		Alert.alert(
-			t("common.delete"),
-			t("profile.deleteEntryMessage"),
-			[
-				{ text: t("common.cancel"), style: "cancel" },
-				{
-					text: t("common.delete"),
-					style: "destructive",
-					onPress: () => deleteMeasurementField(date, key),
-				},
-			],
-		);
+		Alert.alert(t("common.delete"), t("profile.deleteEntryMessage"), [
+			{ text: t("common.cancel"), style: "cancel" },
+			{
+				text: t("common.delete"),
+				style: "destructive",
+				onPress: () => deleteMeasurementField(date, key),
+			},
+		]);
 	}
 
 	const title = `${t(`profile.${measurementKey}`)} ${t("profile.evolution")}`;
 
 	return (
 		<>
-			<BottomDrawer visible={visible && !showLogDrawer && !editEntry} onClose={onClose} title={title}>
-				<ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 16, paddingBottom: 16 }}>
+			<BottomDrawer
+				visible={visible && !showLogDrawer && !editEntry}
+				onClose={onClose}
+				title={title}
+			>
+				<ScrollView
+					showsVerticalScrollIndicator={false}
+					contentContainerStyle={{ gap: 16, paddingBottom: 16 }}
+				>
 					{/* Current value + delta */}
 					<View className="flex-row items-center justify-between">
 						<View className="flex-row items-baseline gap-1">
-							<Text className="text-3xl font-bold text-foreground">
-								{latest?.value ?? "—"}
+							<Text className="text-3xl font-bold text-foreground">{latest?.value ?? "—"}</Text>
+							<Text className="text-base" style={{ color: palette.muted.foreground }}>
+								{unit}
 							</Text>
-							<Text className="text-base" style={{ color: palette.muted.foreground }}>{unit}</Text>
 						</View>
 						{delta != null && delta !== 0 && (
 							<View
@@ -90,16 +102,15 @@ export function MeasurementDetailDrawer({ visible, onClose, measurementKey }: Pr
 									color={palette.accent.DEFAULT}
 								/>
 								<Text className="text-sm font-semibold" style={{ color: palette.accent.DEFAULT }}>
-									{delta >= 0 ? "+" : ""}{delta} {unit}
+									{delta >= 0 ? "+" : ""}
+									{delta} {unit}
 								</Text>
 							</View>
 						)}
 					</View>
 
 					{/* Chart */}
-					{points.length >= 2 && (
-						<MeasurementChart data={points} unit={unit} />
-					)}
+					{points.length >= 2 && <MeasurementChart data={points} unit={unit} />}
 
 					{/* History section */}
 					<View className="gap-3">
@@ -137,8 +148,12 @@ export function MeasurementDetailDrawer({ visible, onClose, measurementKey }: Pr
 											{pt.value} {unit}
 										</Text>
 										{entryDelta != null && entryDelta !== 0 && (
-											<Text className="text-xs font-semibold" style={{ color: palette.accent.DEFAULT }}>
-												{entryDelta > 0 ? "+" : ""}{entryDelta}
+											<Text
+												className="text-xs font-semibold"
+												style={{ color: palette.accent.DEFAULT }}
+											>
+												{entryDelta > 0 ? "+" : ""}
+												{entryDelta}
 											</Text>
 										)}
 										<IconButton
@@ -161,7 +176,10 @@ export function MeasurementDetailDrawer({ visible, onClose, measurementKey }: Pr
 						})}
 
 						{points.length === 0 && (
-							<Text className="text-sm text-center py-4" style={{ color: palette.muted.foreground }}>
+							<Text
+								className="text-sm text-center py-4"
+								style={{ color: palette.muted.foreground }}
+							>
 								{t("profile.noData")}
 							</Text>
 						)}
@@ -201,7 +219,10 @@ const PAD = { top: 24, right: 20, bottom: 32, left: 44 };
 
 const HIT_SLOP = 20;
 
-function MeasurementChart({ data, unit }: { data: { date: string; value: number }[]; unit: string }) {
+function MeasurementChart({
+	data,
+	unit,
+}: { data: { date: string; value: number }[]; unit: string }) {
 	const [width, setWidth] = useState(0);
 	const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
@@ -258,7 +279,12 @@ function MeasurementChart({ data, unit }: { data: { date: string; value: number 
 
 	return (
 		<Pressable
-			style={{ height: CHART_HEIGHT + PAD.top + PAD.bottom, backgroundColor: palette.card.DEFAULT, borderRadius: radius.lg, overflow: "hidden" }}
+			style={{
+				height: CHART_HEIGHT + PAD.top + PAD.bottom,
+				backgroundColor: palette.card.DEFAULT,
+				borderRadius: radius.lg,
+				overflow: "hidden",
+			}}
 			onPress={() => setSelectedIndex(null)}
 			onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
 		>

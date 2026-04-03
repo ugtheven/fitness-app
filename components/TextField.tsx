@@ -13,7 +13,11 @@ export function TextField({ label, ...props }: TextFieldProps) {
 			{label && <Text className="text-sm font-medium text-foreground">{label}</Text>}
 			<TextInput
 				className="border border-border bg-background px-4 text-foreground"
-				style={{ height: spacing.inputHeight, fontSize: typography.statMd.fontSize, borderRadius: radius.lg }}
+				style={{
+					height: spacing.inputHeight,
+					fontSize: typography.statMd.fontSize,
+					borderRadius: radius.lg,
+				}}
 				placeholderTextColor={palette.muted.foreground}
 				{...props}
 			/>

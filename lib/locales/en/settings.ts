@@ -34,13 +34,13 @@ export default {
 		maxWeight: "Max weight",
 		noHistory: "No history yet",
 	},
-hydration: {
-	title: "Hydration",
-	goal: "Goal (ml)",
-	editGoal: "Daily hydration goal",
-	automatic: "Based on your weight: {{value}}L",
-	defaultGoal: "Default: {{value}}L",
-	resetAutomatic: "Reset to automatic",
-	goalReached: "Goal reached!",
-},
+	hydration: {
+		title: "Hydration",
+		goal: "Goal (ml)",
+		editGoal: "Daily hydration goal",
+		automatic: "Based on your weight: {{value}}L",
+		defaultGoal: "Default: {{value}}L",
+		resetAutomatic: "Reset to automatic",
+		goalReached: "Goal reached!",
+	},
 } as const;

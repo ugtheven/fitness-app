@@ -3,9 +3,9 @@ import { eq } from "drizzle-orm";
 import { useLiveQuery } from "drizzle-orm/expo-sqlite";
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Alert, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useTranslation } from "react-i18next";
 import { BottomDrawer } from "../../components/BottomDrawer";
 import { Button } from "../../components/Button";
 import { EmptyState } from "../../components/EmptyState";
@@ -16,8 +16,8 @@ import { TextField } from "../../components/TextField";
 import { db } from "../../db";
 import { programs, sessionExercises, sessions } from "../../db/schema";
 import { EXERCISE_BASES_BY_ID } from "../../lib/exerciseBases";
-import { EXERCISE_VARIANTS_BY_ID } from "../../lib/exerciseVariants";
 import type { MuscleGroup } from "../../lib/exerciseTypes";
+import { EXERCISE_VARIANTS_BY_ID } from "../../lib/exerciseVariants";
 
 type SessionRow = typeof sessions.$inferSelect;
 
@@ -30,20 +30,23 @@ export default function ProgramScreen() {
 	const [sessionName, setSessionName] = useState("");
 
 	const { data: programData } = useLiveQuery(
-		db.select().from(programs).where(eq(programs.id, programId)),
+		db.select().from(programs).where(eq(programs.id, programId))
 	);
 	const program = programData?.[0];
 
 	const { data: sessionData = [] } = useLiveQuery(
-		db.select().from(sessions).where(eq(sessions.programId, programId)).orderBy(sessions.order),
+		db.select().from(sessions).where(eq(sessions.programId, programId)).orderBy(sessions.order)
 	);
 
 	const { data: sessionExRows } = useLiveQuery(
 		db
-			.select({ sessionId: sessionExercises.sessionId, exerciseVariantId: sessionExercises.exerciseVariantId })
+			.select({
+				sessionId: sessionExercises.sessionId,
+				exerciseVariantId: sessionExercises.exerciseVariantId,
+			})
 			.from(sessionExercises)
 			.innerJoin(sessions, eq(sessionExercises.sessionId, sessions.id))
-			.where(eq(sessions.programId, programId)),
+			.where(eq(sessions.programId, programId))
 	);
 
 	async function handleCreate() {
@@ -68,19 +71,17 @@ export default function ProgramScreen() {
 		try {
 			await Promise.all(
 				newData.map((session, index) =>
-					db.update(sessions).set({ order: index }).where(eq(sessions.id, session.id)),
-				),
+					db.update(sessions).set({ order: index }).where(eq(sessions.id, session.id))
+				)
 			);
 		} catch (e) {
 			console.error("Failed to reorder sessions:", e);
 		}
 	}
 
-	const handleDelete = useCallback((sessionId: number, name: string) => {
-		Alert.alert(
-			t("sessions.deleteTitle"),
-			t("sessions.deleteMessage", { name }),
-			[
+	const handleDelete = useCallback(
+		(sessionId: number, name: string) => {
+			Alert.alert(t("sessions.deleteTitle"), t("sessions.deleteMessage", { name }), [
 				{ text: t("common.cancel"), style: "cancel" },
 				{
 					text: t("common.delete"),
@@ -89,9 +90,10 @@ export default function ProgramScreen() {
 						await db.delete(sessions).where(eq(sessions.id, sessionId));
 					},
 				},
-			],
-		);
-	}, [t]);
+			]);
+		},
+		[t]
+	);
 
 	const renderItem = useCallback(
 		({ item, isDragging }: { item: SessionRow; isDragging: boolean }) => {
@@ -99,9 +101,9 @@ export default function ProgramScreen() {
 			const muscles = [
 				...new Set(
 					rows.flatMap((r) => {
-				const variant = EXERCISE_VARIANTS_BY_ID[r.exerciseVariantId ?? ""];
-				return EXERCISE_BASES_BY_ID[variant?.baseId ?? ""]?.muscles ?? [];
-			}),
+						const variant = EXERCISE_VARIANTS_BY_ID[r.exerciseVariantId ?? ""];
+						return EXERCISE_BASES_BY_ID[variant?.baseId ?? ""]?.muscles ?? [];
+					})
 				),
 			] as MuscleGroup[];
 
@@ -116,7 +118,7 @@ export default function ProgramScreen() {
 				/>
 			);
 		},
-		[sessionExRows],
+		[sessionExRows]
 	);
 
 	if (!program) return null;
@@ -153,7 +155,11 @@ export default function ProgramScreen() {
 				)}
 			</View>
 
-			<BottomDrawer visible={drawerOpen} onClose={() => setDrawerOpen(false)} title={t("sessions.newSession")}>
+			<BottomDrawer
+				visible={drawerOpen}
+				onClose={() => setDrawerOpen(false)}
+				title={t("sessions.newSession")}
+			>
 				<View className="gap-4">
 					<TextField
 						label={t("common.name")}
@@ -164,7 +170,13 @@ export default function ProgramScreen() {
 						returnKeyType="done"
 						onSubmitEditing={handleCreate}
 					/>
-					<Button variant="glow" fullWidth label={t("common.create")} onPress={handleCreate} disabled={!sessionName.trim()} />
+					<Button
+						variant="glow"
+						fullWidth
+						label={t("common.create")}
+						onPress={handleCreate}
+						disabled={!sessionName.trim()}
+					/>
 				</View>
 			</BottomDrawer>
 		</SafeAreaView>

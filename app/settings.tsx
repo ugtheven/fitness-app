@@ -3,10 +3,10 @@ import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ScreenHeader } from "../components/ScreenHeader";
-import { changeLanguage, type Language } from "../lib/i18n";
+import { type Language, changeLanguage } from "../lib/i18n";
 import { palette } from "../lib/palette";
 import { borders, radius } from "../lib/tokens";
-import { useUnits, type UnitSystem } from "../lib/units";
+import { type UnitSystem, useUnits } from "../lib/units";
 
 export default function SettingsScreen() {
 	const { t, i18n } = useTranslation();
@@ -30,7 +30,10 @@ export default function SettingsScreen() {
 					>
 						{t("settings.language")}
 					</Text>
-					<View className="overflow-hidden" style={{ backgroundColor: palette.card.DEFAULT, borderRadius: radius.lg }}>
+					<View
+						className="overflow-hidden"
+						style={{ backgroundColor: palette.card.DEFAULT, borderRadius: radius.lg }}
+					>
 						{(["en", "fr"] as Language[]).map((lang, index, arr) => (
 							<Pressable
 								key={lang}
@@ -39,7 +42,14 @@ export default function SettingsScreen() {
 							>
 								<View
 									className="flex-row items-center justify-between px-5 py-4"
-									style={index < arr.length - 1 ? { borderBottomWidth: borders.hairline, borderBottomColor: palette.separator } : undefined}
+									style={
+										index < arr.length - 1
+											? {
+													borderBottomWidth: borders.hairline,
+													borderBottomColor: palette.separator,
+												}
+											: undefined
+									}
 								>
 									<Text className="text-base text-foreground">
 										{lang === "en" ? t("settings.english") : t("settings.french")}
@@ -49,7 +59,10 @@ export default function SettingsScreen() {
 											className="h-5 w-5 rounded-full items-center justify-center"
 											style={{ backgroundColor: palette.foreground }}
 										>
-											<View className="h-2 w-2 rounded-full" style={{ backgroundColor: palette.background }} />
+											<View
+												className="h-2 w-2 rounded-full"
+												style={{ backgroundColor: palette.background }}
+											/>
 										</View>
 									)}
 								</View>
@@ -65,26 +78,33 @@ export default function SettingsScreen() {
 						>
 							{t("settings.units")}
 						</Text>
-						<View className="overflow-hidden" style={{ backgroundColor: palette.card.DEFAULT, borderRadius: radius.lg }}>
+						<View
+							className="overflow-hidden"
+							style={{ backgroundColor: palette.card.DEFAULT, borderRadius: radius.lg }}
+						>
 							{(["metric", "imperial"] as UnitSystem[]).map((u, index, arr) => (
-								<Pressable
-									key={u}
-									onPress={() => setSystem(u)}
-									className="active:opacity-70"
-								>
+								<Pressable key={u} onPress={() => setSystem(u)} className="active:opacity-70">
 									<View
 										className="flex-row items-center justify-between px-5 py-4"
-										style={index < arr.length - 1 ? { borderBottomWidth: borders.hairline, borderBottomColor: palette.separator } : undefined}
+										style={
+											index < arr.length - 1
+												? {
+														borderBottomWidth: borders.hairline,
+														borderBottomColor: palette.separator,
+													}
+												: undefined
+										}
 									>
-										<Text className="text-base text-foreground">
-											{t(`settings.${u}`)}
-										</Text>
+										<Text className="text-base text-foreground">{t(`settings.${u}`)}</Text>
 										{system === u && (
 											<View
 												className="h-5 w-5 rounded-full items-center justify-center"
 												style={{ backgroundColor: palette.foreground }}
 											>
-												<View className="h-2 w-2 rounded-full" style={{ backgroundColor: palette.background }} />
+												<View
+													className="h-2 w-2 rounded-full"
+													style={{ backgroundColor: palette.background }}
+												/>
 											</View>
 										)}
 									</View>

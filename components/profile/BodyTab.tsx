@@ -3,33 +3,59 @@ import { useLiveQuery } from "drizzle-orm/expo-sqlite";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, Text, View } from "react-native";
-import { Button } from "../Button";
 import { palette } from "../../lib/palette";
-import { radius } from "../../lib/tokens";
 import {
 	getMeasurementHistoryQuery,
 	getTwoLatestWeightsQuery,
 	getUserProfileQuery,
 	getWeightLogsQuery,
 } from "../../lib/profileQueries";
-import { EditHeightDrawer } from "./EditHeightDrawer";
+import { radius } from "../../lib/tokens";
 import { useUnits } from "../../lib/units";
+import { Button } from "../Button";
+import { EditHeightDrawer } from "./EditHeightDrawer";
 import { LogWeightDrawer } from "./LogWeightDrawer";
 import { MeasurementDetailDrawer } from "./MeasurementDetailDrawer";
 import { WeightChart } from "./WeightChart";
 
-type MeasurementKey = "bodyFat" | "shoulders" | "chest" | "waist" | "hips" | "neck" | "arms" | "thigh" | "calf";
+type MeasurementKey =
+	| "bodyFat"
+	| "shoulders"
+	| "chest"
+	| "waist"
+	| "hips"
+	| "neck"
+	| "arms"
+	| "thigh"
+	| "calf";
 
-const MEASUREMENT_KEYS: MeasurementKey[] = ["bodyFat", "shoulders", "chest", "waist", "hips", "neck", "arms", "thigh", "calf"];
+const MEASUREMENT_KEYS: MeasurementKey[] = [
+	"bodyFat",
+	"shoulders",
+	"chest",
+	"waist",
+	"hips",
+	"neck",
+	"arms",
+	"thigh",
+	"calf",
+];
 const MEASUREMENT_COLORS: Record<MeasurementKey, string> = {
 	bodyFat: palette.accent.DEFAULT,
-	shoulders: palette.secondary.DEFAULT, chest: palette.secondary.DEFAULT, waist: palette.secondary.DEFAULT, hips: palette.secondary.DEFAULT,
-	neck: palette.secondary.DEFAULT, arms: palette.secondary.DEFAULT, thigh: palette.secondary.DEFAULT, calf: palette.secondary.DEFAULT,
+	shoulders: palette.secondary.DEFAULT,
+	chest: palette.secondary.DEFAULT,
+	waist: palette.secondary.DEFAULT,
+	hips: palette.secondary.DEFAULT,
+	neck: palette.secondary.DEFAULT,
+	arms: palette.secondary.DEFAULT,
+	thigh: palette.secondary.DEFAULT,
+	calf: palette.secondary.DEFAULT,
 };
 
 export function BodyTab() {
 	const { t } = useTranslation();
-	const { displayWeight, weightUnit, displayLength, displayHeight, lengthUnit, heightUnit } = useUnits();
+	const { displayWeight, weightUnit, displayLength, displayHeight, lengthUnit, heightUnit } =
+		useUnits();
 
 	const { data: twoWeights = [] } = useLiveQuery(getTwoLatestWeightsQuery());
 	const { data: weightLogs = [] } = useLiveQuery(getWeightLogsQuery());
@@ -42,7 +68,8 @@ export function BodyTab() {
 
 	const latestWeight = twoWeights[0]?.weightKg ?? null;
 	const previousWeight = twoWeights[1]?.weightKg ?? null;
-	const weightDelta = latestWeight != null && previousWeight != null ? latestWeight - previousWeight : null;
+	const weightDelta =
+		latestWeight != null && previousWeight != null ? latestWeight - previousWeight : null;
 	const heightCm = profileRows[0]?.heightCm ?? null;
 
 	// For each measurement key, find the latest and previous non-null values (rows sorted ASC by date)
@@ -77,7 +104,10 @@ export function BodyTab() {
 			>
 				{/* Weight + Height cards */}
 				<View className="flex-row gap-3" style={{ alignItems: "stretch" }}>
-					<View className="flex-1 px-4 py-3" style={{ backgroundColor: palette.card.DEFAULT, borderRadius: radius.lg }}>
+					<View
+						className="flex-1 px-4 py-3"
+						style={{ backgroundColor: palette.card.DEFAULT, borderRadius: radius.lg }}
+					>
 						<Text className="text-xs font-medium mb-1" style={{ color: palette.muted.foreground }}>
 							{t("profile.weight")}
 						</Text>
@@ -86,7 +116,9 @@ export function BodyTab() {
 								{latestWeight != null ? displayWeight(latestWeight) : "—"}
 							</Text>
 							{latestWeight != null && (
-								<Text className="text-sm ml-1" style={{ color: palette.muted.foreground }}>{weightUnit}</Text>
+								<Text className="text-sm ml-1" style={{ color: palette.muted.foreground }}>
+									{weightUnit}
+								</Text>
 							)}
 						</View>
 						{weightDelta != null && (
@@ -97,14 +129,18 @@ export function BodyTab() {
 									color={palette.accent.DEFAULT}
 								/>
 								<Text className="text-xs font-semibold" style={{ color: palette.accent.DEFAULT }}>
-									{weightDelta >= 0 ? "+" : ""}{displayWeight(Math.abs(weightDelta))} {weightUnit}
+									{weightDelta >= 0 ? "+" : ""}
+									{displayWeight(Math.abs(weightDelta))} {weightUnit}
 								</Text>
 							</View>
 						)}
 					</View>
 
 					<Pressable className="flex-1 active:opacity-70" onPress={() => setShowHeightDrawer(true)}>
-						<View className="flex-1 px-4 py-3" style={{ backgroundColor: palette.card.DEFAULT, borderRadius: radius.lg }}>
+						<View
+							className="flex-1 px-4 py-3"
+							style={{ backgroundColor: palette.card.DEFAULT, borderRadius: radius.lg }}
+						>
 							<View className="flex-row items-center justify-between mb-1">
 								<Text className="text-xs font-medium" style={{ color: palette.muted.foreground }}>
 									{t("profile.height")}
@@ -116,7 +152,9 @@ export function BodyTab() {
 									{heightCm != null ? displayHeight(heightCm) : "—"}
 								</Text>
 								{heightCm != null && (
-									<Text className="text-sm ml-1" style={{ color: palette.muted.foreground }}>{heightUnit}</Text>
+									<Text className="text-sm ml-1" style={{ color: palette.muted.foreground }}>
+										{heightUnit}
+									</Text>
 								)}
 							</View>
 						</View>
@@ -145,11 +183,15 @@ export function BodyTab() {
 					{MEASUREMENT_KEYS.map((key) => {
 						const rawValue = latestPerKey[key] ?? null;
 						const unit = key === "bodyFat" ? "%" : lengthUnit;
-						const value = rawValue != null
-							? (key === "bodyFat" ? rawValue : displayLength(rawValue))
-							: null;
+						const value =
+							rawValue != null ? (key === "bodyFat" ? rawValue : displayLength(rawValue)) : null;
 						const d = deltaPerKey[key] ?? null;
-						const displayDelta = d != null && key !== "bodyFat" ? displayLength(Math.abs(d)) : d != null ? Math.abs(d) : null;
+						const displayDelta =
+							d != null && key !== "bodyFat"
+								? displayLength(Math.abs(d))
+								: d != null
+									? Math.abs(d)
+									: null;
 						return (
 							<Pressable
 								key={key}
@@ -167,7 +209,10 @@ export function BodyTab() {
 										borderRadius: radius.lg,
 									}}
 								>
-									<Text className="text-xs font-medium mb-1" style={{ color: palette.muted.foreground }}>
+									<Text
+										className="text-xs font-medium mb-1"
+										style={{ color: palette.muted.foreground }}
+									>
 										{t(`profile.${key}`)}
 									</Text>
 									<View className="flex-row items-baseline">
@@ -175,7 +220,9 @@ export function BodyTab() {
 											{value != null ? value : "—"}
 										</Text>
 										{value != null && (
-											<Text className="text-xs ml-1" style={{ color: palette.muted.foreground }}>{unit}</Text>
+											<Text className="text-xs ml-1" style={{ color: palette.muted.foreground }}>
+												{unit}
+											</Text>
 										)}
 									</View>
 									{d != null && d !== 0 ? (
@@ -185,8 +232,12 @@ export function BodyTab() {
 												size={12}
 												color={palette.accent.DEFAULT}
 											/>
-											<Text className="text-xs font-semibold" style={{ color: palette.accent.DEFAULT }}>
-												{d >= 0 ? "+" : "−"}{displayDelta} {unit}
+											<Text
+												className="text-xs font-semibold"
+												style={{ color: palette.accent.DEFAULT }}
+											>
+												{d >= 0 ? "+" : "−"}
+												{displayDelta} {unit}
 											</Text>
 										</View>
 									) : (

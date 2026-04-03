@@ -4,12 +4,19 @@ import { Stack } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import migrations from "../drizzle/migrations";
+import { AchievementToastProvider } from "../components/AchievementToast";
 import { db } from "../db";
-import { palette } from "../lib/palette";
+import migrations from "../drizzle/migrations";
 import { initI18n } from "../lib/i18n";
+import { palette } from "../lib/palette";
 import { seedWeightLogs } from "../lib/seedWeight";
-import { buildContextValue, loadUnitSystem, saveUnitSystem, UnitContext, type UnitSystem } from "../lib/units";
+import {
+	UnitContext,
+	type UnitSystem,
+	buildContextValue,
+	loadUnitSystem,
+	saveUnitSystem,
+} from "../lib/units";
 
 export default function RootLayout() {
 	const { success, error } = useMigrations(db, migrations);
@@ -58,14 +65,16 @@ export default function RootLayout() {
 
 	return (
 		<UnitContext.Provider value={unitContextValue}>
-			<GestureHandlerRootView style={{ flex: 1 }}>
-				<Stack
-					screenOptions={{
-						headerShown: false,
-						contentStyle: { backgroundColor: palette.background },
-					}}
-				/>
-			</GestureHandlerRootView>
+			<AchievementToastProvider>
+				<GestureHandlerRootView style={{ flex: 1 }}>
+					<Stack
+						screenOptions={{
+							headerShown: false,
+							contentStyle: { backgroundColor: palette.background },
+						}}
+					/>
+				</GestureHandlerRootView>
+			</AchievementToastProvider>
 		</UnitContext.Provider>
 	);
 }

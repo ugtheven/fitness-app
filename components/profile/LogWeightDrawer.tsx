@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { View } from "react-native";
+import { insertWeightLog } from "../../lib/profileQueries";
+import { useUnits } from "../../lib/units";
 import { BottomDrawer } from "../BottomDrawer";
 import { Button } from "../Button";
 import { NumberField } from "../NumberField";
-import { insertWeightLog } from "../../lib/profileQueries";
-import { useUnits } from "../../lib/units";
 
 function todayStr(): string {
 	const d = new Date();
@@ -52,7 +52,13 @@ export function LogWeightDrawer({ visible, onClose, lastWeight }: Props) {
 					step={0.1}
 					endAdornment={weightUnit}
 				/>
-				<Button variant="glow" label={t("profile.save")} onPress={handleSave} loading={saving} fullWidth />
+				<Button
+					variant="glow"
+					label={t("profile.save")}
+					onPress={handleSave}
+					loading={saving}
+					fullWidth
+				/>
 			</View>
 		</BottomDrawer>
 	);

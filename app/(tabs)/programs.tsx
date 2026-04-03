@@ -3,16 +3,16 @@ import { desc, eq, sql } from "drizzle-orm";
 import { useLiveQuery } from "drizzle-orm/expo-sqlite";
 import { router } from "expo-router";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useTranslation } from "react-i18next";
 import { BottomDrawer } from "../../components/BottomDrawer";
 import { Button } from "../../components/Button";
 import { EmptyState } from "../../components/EmptyState";
 import { ProgramCard } from "../../components/ProgramCard";
 import { TextField } from "../../components/TextField";
 import { db } from "../../db";
-import { programs, sessions, sessionExercises } from "../../db/schema";
+import { programs, sessionExercises, sessions } from "../../db/schema";
 import { palette } from "../../lib/palette";
 import { borders, spacing } from "../../lib/tokens";
 
@@ -127,7 +127,11 @@ export default function ProgramsScreen() {
 					<EmptyState message={t("programs.empty")} hint={t("programs.emptyHint")} />
 				) : (
 					<ScrollView
-						contentContainerStyle={{ paddingTop: 20, paddingBottom: spacing.navbarClearance, gap: 12 }}
+						contentContainerStyle={{
+							paddingTop: 20,
+							paddingBottom: spacing.navbarClearance,
+							gap: 12,
+						}}
 						showsVerticalScrollIndicator={false}
 					>
 						{/* Active program */}
@@ -136,87 +140,83 @@ export default function ProgramsScreen() {
 								onPress={() => router.push(`/program/${activeProgram.id}`)}
 								className="active:opacity-70"
 							>
+								<View
+									className="rounded-2xl bg-card p-5"
+									style={{ borderWidth: borders.emphasis, borderColor: palette.accent.DEFAULT }}
+								>
+									{/* Card header */}
+									<View className="mb-4 flex-row items-center gap-3">
 										<View
-											className="rounded-2xl bg-card p-5"
-											style={{ borderWidth: borders.emphasis, borderColor: palette.accent.DEFAULT }}
+											className="rounded-xl p-2"
+											style={{ backgroundColor: palette.accent.muted }}
 										>
-											{/* Card header */}
-											<View className="mb-4 flex-row items-center gap-3">
-												<View
-													className="rounded-xl p-2"
-													style={{ backgroundColor: palette.accent.muted }}
-												>
-													<Ionicons name="flash" size={18} color={palette.accent.DEFAULT} />
-												</View>
-												<Text
-													className="flex-1 text-xs font-bold tracking-widest"
-													style={{ color: palette.accent.DEFAULT }}
-												>
-													{t("programs.activeProgram").toUpperCase()}
-												</Text>
-												<Ionicons
-													name="chevron-forward"
-													size={18}
-													color={palette.muted.foreground}
-												/>
-											</View>
+											<Ionicons name="flash" size={18} color={palette.accent.DEFAULT} />
+										</View>
+										<Text
+											className="flex-1 text-xs font-bold tracking-widest"
+											style={{ color: palette.accent.DEFAULT }}
+										>
+											{t("programs.activeProgram").toUpperCase()}
+										</Text>
+										<Ionicons name="chevron-forward" size={18} color={palette.muted.foreground} />
+									</View>
 
-											{/* Program name */}
-											<Text className="mb-3 text-2xl font-bold text-foreground">
-												{activeProgram.name}
+									{/* Program name */}
+									<Text className="mb-3 text-2xl font-bold text-foreground">
+										{activeProgram.name}
+									</Text>
+
+									{/* Stats */}
+									<View className="mb-3 flex-row items-center gap-4">
+										<View className="flex-row items-center gap-1.5">
+											<View
+												className="h-2 w-2 rounded-full"
+												style={{ backgroundColor: palette.accent.DEFAULT }}
+											/>
+											<Text className="text-sm font-medium text-foreground">
+												{t("programs.sessionCount", { count: activeSessions.length })}
 											</Text>
+										</View>
+										<View className="flex-row items-center gap-1.5">
+											<View
+												className="h-2 w-2 rounded-full"
+												style={{ backgroundColor: palette.accent.DEFAULT }}
+											/>
+											<Text className="text-sm font-medium text-foreground">
+												{t("programs.exerciseCount", { count: activeExerciseCount })}
+											</Text>
+										</View>
+									</View>
 
-											{/* Stats */}
-											<View className="mb-3 flex-row items-center gap-4">
-												<View className="flex-row items-center gap-1.5">
-													<View
-														className="h-2 w-2 rounded-full"
-														style={{ backgroundColor: palette.accent.DEFAULT }}
-													/>
-													<Text className="text-sm font-medium text-foreground">
-														{t("programs.sessionCount", { count: activeSessions.length })}
+									{/* Session chips */}
+									{activeSessions.length > 0 && (
+										<View className="flex-row flex-wrap gap-2">
+											{activeSessions.slice(0, MAX_CHIPS).map((s, i) => (
+												<View
+													key={s.id}
+													className="flex-row items-center rounded-full border border-border bg-background px-3 py-1"
+												>
+													<Text
+														className="mr-1 text-xs font-bold"
+														style={{ color: palette.accent.DEFAULT }}
+													>
+														{t("programs.dayLabel", { n: i + 1 })}
 													</Text>
+													<Text className="text-xs font-medium text-foreground">{s.name}</Text>
 												</View>
-												<View className="flex-row items-center gap-1.5">
-													<View
-														className="h-2 w-2 rounded-full"
-														style={{ backgroundColor: palette.accent.DEFAULT }}
-													/>
-													<Text className="text-sm font-medium text-foreground">
-														{t("programs.exerciseCount", { count: activeExerciseCount })}
+											))}
+											{activeOverflow > 0 && (
+												<View className="rounded-full border border-border bg-background px-3 py-1">
+													<Text className="text-xs font-medium text-muted-foreground">
+														+{activeOverflow}
 													</Text>
-												</View>
-											</View>
-
-											{/* Session chips */}
-											{activeSessions.length > 0 && (
-												<View className="flex-row flex-wrap gap-2">
-													{activeSessions.slice(0, MAX_CHIPS).map((s, i) => (
-														<View
-															key={s.id}
-															className="flex-row items-center rounded-full border border-border bg-background px-3 py-1"
-														>
-															<Text
-																className="mr-1 text-xs font-bold"
-																style={{ color: palette.accent.DEFAULT }}
-															>
-																{t("programs.dayLabel", { n: i + 1 })}
-															</Text>
-															<Text className="text-xs font-medium text-foreground">{s.name}</Text>
-														</View>
-													))}
-													{activeOverflow > 0 && (
-														<View className="rounded-full border border-border bg-background px-3 py-1">
-															<Text className="text-xs font-medium text-muted-foreground">
-																+{activeOverflow}
-															</Text>
-														</View>
-													)}
 												</View>
 											)}
 										</View>
+									)}
+								</View>
 							</Pressable>
-							)}
+						)}
 
 						{/* Other programs */}
 						{otherPrograms.length > 0 && (
@@ -257,7 +257,13 @@ export default function ProgramsScreen() {
 						returnKeyType="done"
 						onSubmitEditing={handleCreate}
 					/>
-					<Button variant="glow" fullWidth label={t("common.create")} onPress={handleCreate} disabled={!programName.trim()} />
+					<Button
+						variant="glow"
+						fullWidth
+						label={t("common.create")}
+						onPress={handleCreate}
+						disabled={!programName.trim()}
+					/>
 				</View>
 			</BottomDrawer>
 

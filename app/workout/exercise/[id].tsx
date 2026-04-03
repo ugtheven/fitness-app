@@ -1,25 +1,31 @@
 import { Ionicons } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
-import * as Haptics from "expo-haptics";
 import { and, eq, ne, sql } from "drizzle-orm";
 import { useLiveQuery } from "drizzle-orm/expo-sqlite";
+import { BlurView } from "expo-blur";
+import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import Animated, { FadeIn, useAnimatedStyle, withTiming } from "react-native-reanimated";
-import { Circle, Svg } from "react-native-svg";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Circle, Svg } from "react-native-svg";
 import { Button } from "../../../components/Button";
 import { ScreenHeader } from "../../../components/ScreenHeader";
 import { db } from "../../../db";
-import { sessionExercises, sessions, workoutExercises, workoutSessions, workoutSets } from "../../../db/schema";
+import {
+	sessionExercises,
+	sessions,
+	workoutExercises,
+	workoutSessions,
+	workoutSets,
+} from "../../../db/schema";
 import { EXERCISE_VARIANTS_BY_ID } from "../../../lib/exerciseVariants";
-import { type PrefillSet, getExercisePR, getLastSets } from "../../../lib/workoutHistory";
-import { useSessionTimer } from "../../../lib/useSessionTimer";
 import { palette } from "../../../lib/palette";
 import { glass, radius, typography } from "../../../lib/tokens";
 import { useUnits } from "../../../lib/units";
+import { useSessionTimer } from "../../../lib/useSessionTimer";
+import { type PrefillSet, getExercisePR, getLastSets } from "../../../lib/workoutHistory";
 
 export default function ExerciseScreen() {
 	const { t } = useTranslation();
@@ -80,7 +86,8 @@ export default function ExerciseScreen() {
 		hasInitializedRef.current = true;
 
 		const variantId = exerciseRow.workoutExercise.exerciseVariantId;
-		const templateReps = exerciseRow.sessionExercise?.reps ?? exerciseRow.workoutExercise.prescribedReps;
+		const templateReps =
+			exerciseRow.sessionExercise?.reps ?? exerciseRow.workoutExercise.prescribedReps;
 		const templateWeight = exerciseRow.sessionExercise?.defaultWeight ?? 0;
 		const v = EXERCISE_VARIANTS_BY_ID[variantId];
 		const isBodyweight = v?.equipment === "bodyweight";
@@ -198,13 +205,16 @@ export default function ExerciseScreen() {
 
 			await db.transaction(async (tx) => {
 				const storageWeight = weight > 0 ? toStorageWeight(weight) : null;
-				const [inserted] = await tx.insert(workoutSets).values({
-					workoutExerciseId,
-					setIndex: doneSets,
-					...(isUnilateral ? { repsLeft, repsRight } : { reps }),
-					weight: storageWeight,
-					completedAt: new Date().toISOString(),
-				}).returning({ id: workoutSets.id });
+				const [inserted] = await tx
+					.insert(workoutSets)
+					.values({
+						workoutExerciseId,
+						setIndex: doneSets,
+						...(isUnilateral ? { repsLeft, repsRight } : { reps }),
+						weight: storageWeight,
+						completedAt: new Date().toISOString(),
+					})
+					.returning({ id: workoutSets.id });
 				insertedSetId = inserted.id;
 
 				if (isLastSet) {
@@ -266,9 +276,10 @@ export default function ExerciseScreen() {
 				// Prefill next set values from history
 				const nextSetIndex = doneSets + 1;
 				const prefillSets = prefillSetsRef.current;
-				const nextPrefill = prefillSets.length > 0
-					? prefillSets[Math.min(nextSetIndex, prefillSets.length - 1)]
-					: null;
+				const nextPrefill =
+					prefillSets.length > 0
+						? prefillSets[Math.min(nextSetIndex, prefillSets.length - 1)]
+						: null;
 				if (nextPrefill) {
 					applyPrefill(nextPrefill);
 				}
@@ -298,7 +309,12 @@ export default function ExerciseScreen() {
 	const timerPill = (
 		<View
 			className="px-3 py-1.5"
-			style={{ backgroundColor: palette.accent.muted, borderWidth: 1, borderColor: palette.accent.border, borderRadius: radius.md }}
+			style={{
+				backgroundColor: palette.accent.muted,
+				borderWidth: 1,
+				borderColor: palette.accent.border,
+				borderRadius: radius.md,
+			}}
 		>
 			<Text className="text-sm font-bold tabular-nums" style={{ color: palette.accent.DEFAULT }}>
 				{timerLabel}
@@ -317,7 +333,10 @@ export default function ExerciseScreen() {
 					onBack={() => router.back()}
 					action={timerPill}
 				/>
-				<ScrollView className="flex-1 px-6" contentContainerStyle={{ paddingTop: 16, paddingBottom: 32, gap: 8 }}>
+				<ScrollView
+					className="flex-1 px-6"
+					contentContainerStyle={{ paddingTop: 16, paddingBottom: 32, gap: 8 }}
+				>
 					{/* All-green stepper */}
 					<View className="flex-row gap-2 mb-4">
 						{Array.from({ length: totalSets }, (_, i) => (
@@ -330,9 +349,7 @@ export default function ExerciseScreen() {
 							className="flex-row items-center justify-between px-4 py-3"
 							style={{ backgroundColor: palette.card.DEFAULT, borderRadius: radius.lg }}
 						>
-							<Text className="text-sm font-semibold text-foreground">
-								Set {s.setIndex + 1}
-							</Text>
+							<Text className="text-sm font-semibold text-foreground">Set {s.setIndex + 1}</Text>
 							<View className="flex-row items-center gap-3">
 								{s.reps != null && (
 									<Text className="text-sm" style={{ color: palette.muted.foreground }}>
@@ -367,152 +384,163 @@ export default function ExerciseScreen() {
 			/>
 
 			<View className="flex-1">
-					{/* Segmented bar stepper + X/Y label */}
-					<View className="flex-row items-center gap-3 px-6 pt-2 pb-4">
-						<View className="flex-1 flex-row gap-2">
-							{Array.from({ length: totalSets }, (_, i) => i).map((i) => (
-								<AnimatedSegment
-									key={`set-${i}`}
-									state={i < doneSets ? "done" : i === doneSets ? "current" : "pending"}
-								/>
-							))}
-						</View>
-						<Text className="text-xs font-semibold tabular-nums" style={{ color: palette.muted.foreground }}>
-							{currentSet}/{totalSets}
-						</Text>
+				{/* Segmented bar stepper + X/Y label */}
+				<View className="flex-row items-center gap-3 px-6 pt-2 pb-4">
+					<View className="flex-1 flex-row gap-2">
+						{Array.from({ length: totalSets }, (_, i) => i).map((i) => (
+							<AnimatedSegment
+								key={`set-${i}`}
+								state={i < doneSets ? "done" : i === doneSets ? "current" : "pending"}
+							/>
+						))}
 					</View>
+					<Text
+						className="text-xs font-semibold tabular-nums"
+						style={{ color: palette.muted.foreground }}
+					>
+						{currentSet}/{totalSets}
+					</Text>
+				</View>
 
-					{/* Cards — centrées verticalement */}
-					<View className="flex-1 justify-center px-6 gap-6">
-						{isUnilateral ? (
-							<>
-								{/* L / R side indicator */}
-								<View className="flex-row gap-3 justify-center">
-									{(["left", "right"] as const).map((side) => {
-										const isDone = side === "left" && unilateralSide === "right";
-										const isActive = side === unilateralSide;
-										return (
-											<View
-												key={side}
-												className="flex-row items-center gap-1.5 px-4 py-2"
-												style={{
-													borderRadius: radius.md,
-													backgroundColor: isDone
+				{/* Cards — centrées verticalement */}
+				<View className="flex-1 justify-center px-6 gap-6">
+					{isUnilateral ? (
+						<>
+							{/* L / R side indicator */}
+							<View className="flex-row gap-3 justify-center">
+								{(["left", "right"] as const).map((side) => {
+									const isDone = side === "left" && unilateralSide === "right";
+									const isActive = side === unilateralSide;
+									return (
+										<View
+											key={side}
+											className="flex-row items-center gap-1.5 px-4 py-2"
+											style={{
+												borderRadius: radius.md,
+												backgroundColor: isDone
+													? palette.accent.muted
+													: isActive
 														? palette.accent.muted
-														: isActive
-															? palette.accent.muted
-															: palette.muted.DEFAULT,
-													borderWidth: isActive ? 1 : 0,
-													borderColor: palette.accent.DEFAULT,
+														: palette.muted.DEFAULT,
+												borderWidth: isActive ? 1 : 0,
+												borderColor: palette.accent.DEFAULT,
+											}}
+										>
+											{isDone && (
+												<Ionicons name="checkmark" size={14} color={palette.accent.DEFAULT} />
+											)}
+											<Text
+												className="text-sm font-semibold"
+												style={{
+													color:
+														isActive || isDone ? palette.accent.DEFAULT : palette.muted.foreground,
 												}}
 											>
-												{isDone && (
-													<Ionicons name="checkmark" size={14} color={palette.accent.DEFAULT} />
-												)}
-												<Text
-													className="text-sm font-semibold"
-													style={{ color: isActive || isDone ? palette.accent.DEFAULT : palette.muted.foreground }}
-												>
-													{side === "left" ? t("workout.repsLeft") : t("workout.repsRight")}
-												</Text>
-											</View>
-										);
-									})}
-								</View>
-								<ValueCard
-									label={unilateralSide === "left" ? t("workout.repsLeft") : t("workout.repsRight")}
-									value={unilateralSide === "left" ? repsLeft : repsRight}
-									targetLabel={t("workout.target", { value: prescribedReps })}
-									onDecrement={() =>
-										unilateralSide === "left"
-											? setRepsLeft((v) => Math.max(1, v - 1))
-											: setRepsRight((v) => Math.max(1, v - 1))
-									}
-									onIncrement={() =>
-										unilateralSide === "left"
-											? setRepsLeft((v) => v + 1)
-											: setRepsRight((v) => v + 1)
-									}
-								/>
-							</>
-						) : (
+												{side === "left" ? t("workout.repsLeft") : t("workout.repsRight")}
+											</Text>
+										</View>
+									);
+								})}
+							</View>
 							<ValueCard
-								label={t("workout.reps")}
-								value={reps}
-								target={prescribedReps}
+								label={unilateralSide === "left" ? t("workout.repsLeft") : t("workout.repsRight")}
+								value={unilateralSide === "left" ? repsLeft : repsRight}
 								targetLabel={t("workout.target", { value: prescribedReps })}
-								onDecrement={() => setReps((v) => Math.max(1, v - 1))}
-								onIncrement={() => setReps((v) => v + 1)}
-							/>
-						)}
-
-						{showWeightInput ? (
-							<WeightCard
-								label={`${t("workout.weight")} (${weightUnit})`}
-								value={weight}
-								step={weightStep}
-								onDecrement={() => setWeight((v) => Math.max(0, Math.round((v - weightStep) * 10) / 10))}
-								onIncrement={() => setWeight((v) => Math.round((v + weightStep) * 10) / 10)}
-								onQuickChange={(delta) =>
-									setWeight((v) => Math.max(0, Math.round((v + delta) * 10) / 10))
+								onDecrement={() =>
+									unilateralSide === "left"
+										? setRepsLeft((v) => Math.max(1, v - 1))
+										: setRepsRight((v) => Math.max(1, v - 1))
 								}
-								onDismiss={() => { setShowWeightInput(false); setWeight(0); }}
+								onIncrement={() =>
+									unilateralSide === "left" ? setRepsLeft((v) => v + 1) : setRepsRight((v) => v + 1)
+								}
 							/>
-						) : (
-							<Pressable
-								onPress={() => setShowWeightInput(true)}
-								className="items-center justify-center active:opacity-70"
-								style={{ backgroundColor: palette.card.DEFAULT, height: 56, borderRadius: radius.lg }}
-							>
-								<Text className="text-sm font-medium" style={{ color: palette.muted.foreground }}>
-									+ {t("workout.addWeight")}
-								</Text>
-							</Pressable>
-						)}
-					</View>
-
-					{/* PR badge */}
-					{newPRWeight != null && (
-						<PRBadge label={t("pr.newRecord", { weight: displayWeight(newPRWeight), unit: weightUnit })} />
-					)}
-
-					{/* Undo toast */}
-					{undoSetId != null && (
-						<Animated.View
-							entering={FadeIn.duration(200)}
-							className="mx-6 px-4 py-3 flex-row items-center justify-between"
-							style={{ backgroundColor: palette.muted.DEFAULT, borderRadius: radius.lg }}
-						>
-							<Text className="text-sm" style={{ color: palette.foreground }}>
-								{t("workout.setLogged")}
-							</Text>
-							<Pressable onPress={handleUndo} className="active:opacity-70">
-								<Text className="text-sm font-bold" style={{ color: palette.accent.DEFAULT }}>
-									{t("workout.undo")}
-								</Text>
-							</Pressable>
-						</Animated.View>
-					)}
-
-					{/* Bouton fixe en bas */}
-					<View className="px-6 pb-6 pt-4">
-						<Button
-							variant="glow"
-							fullWidth
-							label={
-								isUnilateral && unilateralSide === "left"
-									? t("workout.validateLeft")
-									: t("workout.validateSet", { set: currentSet })
-							}
-							onPress={handleSaveSet}
-							loading={isSaving}
+						</>
+					) : (
+						<ValueCard
+							label={t("workout.reps")}
+							value={reps}
+							target={prescribedReps}
+							targetLabel={t("workout.target", { value: prescribedReps })}
+							onDecrement={() => setReps((v) => Math.max(1, v - 1))}
+							onIncrement={() => setReps((v) => v + 1)}
 						/>
-						{isUnilateral && unilateralSide === "left" && (
-							<Text className="text-xs text-center mt-2" style={{ color: palette.muted.foreground }}>
-								{t("workout.thenRightSide")}
+					)}
+
+					{showWeightInput ? (
+						<WeightCard
+							label={`${t("workout.weight")} (${weightUnit})`}
+							value={weight}
+							step={weightStep}
+							onDecrement={() =>
+								setWeight((v) => Math.max(0, Math.round((v - weightStep) * 10) / 10))
+							}
+							onIncrement={() => setWeight((v) => Math.round((v + weightStep) * 10) / 10)}
+							onQuickChange={(delta) =>
+								setWeight((v) => Math.max(0, Math.round((v + delta) * 10) / 10))
+							}
+							onDismiss={() => {
+								setShowWeightInput(false);
+								setWeight(0);
+							}}
+						/>
+					) : (
+						<Pressable
+							onPress={() => setShowWeightInput(true)}
+							className="items-center justify-center active:opacity-70"
+							style={{ backgroundColor: palette.card.DEFAULT, height: 56, borderRadius: radius.lg }}
+						>
+							<Text className="text-sm font-medium" style={{ color: palette.muted.foreground }}>
+								+ {t("workout.addWeight")}
 							</Text>
-						)}
-					</View>
+						</Pressable>
+					)}
+				</View>
+
+				{/* PR badge */}
+				{newPRWeight != null && (
+					<PRBadge
+						label={t("pr.newRecord", { weight: displayWeight(newPRWeight), unit: weightUnit })}
+					/>
+				)}
+
+				{/* Undo toast */}
+				{undoSetId != null && (
+					<Animated.View
+						entering={FadeIn.duration(200)}
+						className="mx-6 px-4 py-3 flex-row items-center justify-between"
+						style={{ backgroundColor: palette.muted.DEFAULT, borderRadius: radius.lg }}
+					>
+						<Text className="text-sm" style={{ color: palette.foreground }}>
+							{t("workout.setLogged")}
+						</Text>
+						<Pressable onPress={handleUndo} className="active:opacity-70">
+							<Text className="text-sm font-bold" style={{ color: palette.accent.DEFAULT }}>
+								{t("workout.undo")}
+							</Text>
+						</Pressable>
+					</Animated.View>
+				)}
+
+				{/* Bouton fixe en bas */}
+				<View className="px-6 pb-6 pt-4">
+					<Button
+						variant="glow"
+						fullWidth
+						label={
+							isUnilateral && unilateralSide === "left"
+								? t("workout.validateLeft")
+								: t("workout.validateSet", { set: currentSet })
+						}
+						onPress={handleSaveSet}
+						loading={isSaving}
+					/>
+					{isUnilateral && unilateralSide === "left" && (
+						<Text className="text-xs text-center mt-2" style={{ color: palette.muted.foreground }}>
+							{t("workout.thenRightSide")}
+						</Text>
+					)}
+				</View>
 			</View>
 
 			{/* Rest overlay — couvre tout l'écran y compris le header */}
@@ -524,18 +552,31 @@ export default function ExerciseScreen() {
 								{name}
 							</Text>
 							<Text className="text-sm" style={{ color: palette.muted.foreground }}>
-								{t("workout.nextSet")} · {t("workout.setProgress", { current: restNextSet, total: totalSets })}
+								{t("workout.nextSet")} ·{" "}
+								{t("workout.setProgress", { current: restNextSet, total: totalSets })}
 							</Text>
 						</View>
 
-						<RestRing secondsLeft={restSecondsLeft} totalSeconds={restTotalTime} label={restTimerLabel} sublabel={t("workout.rest")} />
+						<RestRing
+							secondsLeft={restSecondsLeft}
+							totalSeconds={restTotalTime}
+							label={restTimerLabel}
+							sublabel={t("workout.rest")}
+						/>
 
 						<View className="flex-row items-center gap-6">
 							<Pressable onPress={addRestTime} className="active:opacity-70 px-5 py-3">
-								<Text className="text-base font-semibold" style={{ color: palette.accent.DEFAULT }}>+30s</Text>
+								<Text className="text-base font-semibold" style={{ color: palette.accent.DEFAULT }}>
+									+30s
+								</Text>
 							</Pressable>
 							<Pressable onPress={skipRest} className="active:opacity-70 px-5 py-3">
-								<Text className="text-base font-semibold" style={{ color: palette.muted.foreground }}>{t("common.skip")}</Text>
+								<Text
+									className="text-base font-semibold"
+									style={{ color: palette.muted.foreground }}
+								>
+									{t("common.skip")}
+								</Text>
 							</Pressable>
 						</View>
 					</View>
@@ -566,7 +607,12 @@ const RING_STROKE = 12;
 const RING_CENTER = RING_SIZE / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 
-function RestRing({ secondsLeft, totalSeconds, label, sublabel }: { secondsLeft: number; totalSeconds: number; label: string; sublabel: string }) {
+function RestRing({
+	secondsLeft,
+	totalSeconds,
+	label,
+	sublabel,
+}: { secondsLeft: number; totalSeconds: number; label: string; sublabel: string }) {
 	const progress = totalSeconds > 0 ? secondsLeft / totalSeconds : 0;
 	const strokeDashoffset = CIRCUMFERENCE * (1 - progress);
 
@@ -597,7 +643,10 @@ function RestRing({ secondsLeft, totalSeconds, label, sublabel }: { secondsLeft:
 			</Svg>
 			{/* Timer label centered */}
 			<View style={StyleSheet.absoluteFillObject} className="items-center justify-center">
-				<Text className="font-bold tabular-nums" style={{ ...typography.displayMd, color: palette.foreground }}>
+				<Text
+					className="font-bold tabular-nums"
+					style={{ ...typography.displayMd, color: palette.foreground }}
+				>
 					{label}
 				</Text>
 				<Text className="text-xs font-medium mt-1" style={{ color: palette.muted.foreground }}>
@@ -619,7 +668,10 @@ function CircleButton({ symbol, variant, onPress }: CircleButtonProps) {
 	const color = variant === "primary" ? palette.accent.DEFAULT : palette.foreground;
 	return (
 		<Pressable
-			onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onPress(); }}
+			onPress={() => {
+				Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+				onPress();
+			}}
 			className="items-center justify-center rounded-full active:opacity-50"
 			style={{ width: 56, height: 56, backgroundColor: bg }}
 		>
@@ -637,9 +689,19 @@ type ValueCardProps = {
 	onIncrement: () => void;
 };
 
-function ValueCard({ label, value, target, targetLabel, onDecrement, onIncrement }: ValueCardProps) {
+function ValueCard({
+	label,
+	value,
+	target,
+	targetLabel,
+	onDecrement,
+	onIncrement,
+}: ValueCardProps) {
 	return (
-		<View className="px-6 py-5" style={{ backgroundColor: palette.card.DEFAULT, borderRadius: radius.lg }}>
+		<View
+			className="px-6 py-5"
+			style={{ backgroundColor: palette.card.DEFAULT, borderRadius: radius.lg }}
+		>
 			<Text
 				className="text-xs font-semibold text-center tracking-widest mb-4"
 				style={{ color: palette.muted.foreground }}
@@ -667,7 +729,12 @@ function PRBadge({ label }: { label: string }) {
 		<Animated.View
 			entering={FadeIn.duration(300)}
 			className="mx-6 px-4 py-3 flex-row items-center justify-center gap-2"
-			style={{ backgroundColor: palette.accent.muted, borderWidth: 1, borderColor: palette.accent.border, borderRadius: radius.lg }}
+			style={{
+				backgroundColor: palette.accent.muted,
+				borderWidth: 1,
+				borderColor: palette.accent.border,
+				borderRadius: radius.lg,
+			}}
 		>
 			<Ionicons name="flash" size={16} color={palette.accent.DEFAULT} />
 			<Text className="text-sm font-bold" style={{ color: palette.accent.DEFAULT }}>
@@ -687,10 +754,21 @@ type WeightCardProps = {
 	onDismiss: () => void;
 };
 
-function WeightCard({ label, value, step, onDecrement, onIncrement, onQuickChange, onDismiss }: WeightCardProps) {
+function WeightCard({
+	label,
+	value,
+	step,
+	onDecrement,
+	onIncrement,
+	onQuickChange,
+	onDismiss,
+}: WeightCardProps) {
 	const quickDeltas = [-step * 2, -step, step, step * 2];
 	return (
-		<View className="px-6 py-5" style={{ backgroundColor: palette.card.DEFAULT, borderRadius: radius.lg }}>
+		<View
+			className="px-6 py-5"
+			style={{ backgroundColor: palette.card.DEFAULT, borderRadius: radius.lg }}
+		>
 			<Text
 				className="text-xs font-semibold text-center tracking-widest mb-4"
 				style={{ color: palette.muted.foreground }}

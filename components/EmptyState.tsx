@@ -12,9 +12,13 @@ export function EmptyState({ icon, message, hint }: EmptyStateProps) {
 	return (
 		<View className="flex-1 items-center justify-center gap-3">
 			{icon}
-			<Text className="text-base" style={{ color: palette.muted.foreground }}>{message}</Text>
+			<Text className="text-base" style={{ color: palette.muted.foreground }}>
+				{message}
+			</Text>
 			{hint && (
-				<Text className="text-sm text-center" style={{ color: palette.muted.foreground }}>{hint}</Text>
+				<Text className="text-sm text-center" style={{ color: palette.muted.foreground }}>
+					{hint}
+				</Text>
 			)}
 		</View>
 	);

@@ -1,48 +1,55 @@
 {
-  "version": "7",
-  "dialect": "sqlite",
-  "entries": [
-    {
-      "idx": 0,
-      "version": "6",
-      "when": 1774777000178,
-      "tag": "0000_full_schema",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1774779000000,
-      "tag": "0001_profile_tables",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1774781000000,
-      "tag": "0002_goals",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1774783000000,
-      "tag": "0003_add_indexes",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "6",
-      "when": 1774785000000,
-      "tag": "0004_add_prescribed_rest_time",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "6",
-      "when": 1774787000000,
-      "tag": "0005_hydration_tracking",
-      "breakpoints": true
-    }
-  ]
+	"version": "7",
+	"dialect": "sqlite",
+	"entries": [
+		{
+			"idx": 0,
+			"version": "6",
+			"when": 1774777000178,
+			"tag": "0000_full_schema",
+			"breakpoints": true
+		},
+		{
+			"idx": 1,
+			"version": "6",
+			"when": 1774779000000,
+			"tag": "0001_profile_tables",
+			"breakpoints": true
+		},
+		{
+			"idx": 2,
+			"version": "6",
+			"when": 1774781000000,
+			"tag": "0002_goals",
+			"breakpoints": true
+		},
+		{
+			"idx": 3,
+			"version": "6",
+			"when": 1774783000000,
+			"tag": "0003_add_indexes",
+			"breakpoints": true
+		},
+		{
+			"idx": 4,
+			"version": "6",
+			"when": 1774785000000,
+			"tag": "0004_add_prescribed_rest_time",
+			"breakpoints": true
+		},
+		{
+			"idx": 5,
+			"version": "6",
+			"when": 1774787000000,
+			"tag": "0005_hydration_tracking",
+			"breakpoints": true
+		},
+		{
+			"idx": 6,
+			"version": "6",
+			"when": 1774789000000,
+			"tag": "0006_xp_level_system",
+			"breakpoints": true
+		}
+	]
 }

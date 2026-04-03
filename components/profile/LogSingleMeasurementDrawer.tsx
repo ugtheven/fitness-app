@@ -7,7 +7,16 @@ import { BottomDrawer } from "../BottomDrawer";
 import { Button } from "../Button";
 import { NumberField } from "../NumberField";
 
-type MeasurementKey = "bodyFat" | "shoulders" | "chest" | "waist" | "hips" | "neck" | "arms" | "thigh" | "calf";
+type MeasurementKey =
+	| "bodyFat"
+	| "shoulders"
+	| "chest"
+	| "waist"
+	| "hips"
+	| "neck"
+	| "arms"
+	| "thigh"
+	| "calf";
 
 function todayStr(): string {
 	const d = new Date();
@@ -23,7 +32,13 @@ type Props = {
 	editDate?: string;
 };
 
-export function LogSingleMeasurementDrawer({ visible, onClose, measurementKey, lastValue, editDate }: Props) {
+export function LogSingleMeasurementDrawer({
+	visible,
+	onClose,
+	measurementKey,
+	lastValue,
+	editDate,
+}: Props) {
 	const { t } = useTranslation();
 	const { toStorageLength, lengthUnit } = useUnits();
 	const isBodyFat = measurementKey === "bodyFat";
@@ -72,7 +87,14 @@ export function LogSingleMeasurementDrawer({ visible, onClose, measurementKey, l
 					step={step}
 					endAdornment={unit}
 				/>
-				<Button variant="glow" label={t("profile.save")} onPress={handleSave} loading={saving} fullWidth disabled={value <= 0} />
+				<Button
+					variant="glow"
+					label={t("profile.save")}
+					onPress={handleSave}
+					loading={saving}
+					fullWidth
+					disabled={value <= 0}
+				/>
 			</View>
 		</BottomDrawer>
 	);

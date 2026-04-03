@@ -1,6 +1,15 @@
 import { and, desc, eq, isNotNull, sql } from "drizzle-orm";
 import { db } from "../db";
-import { bodyMeasurements, goals, userProfile, weightLogs, workoutExercises, workoutSessions, workoutSets } from "../db/schema";
+import {
+	bodyMeasurements,
+	goals,
+	userProfile,
+	weightLogs,
+	workoutExercises,
+	workoutSessions,
+	workoutSets,
+} from "../db/schema";
+import { checkAndGrantAchievements } from "./xpQueries";
 
 // ─── Read queries (for useLiveQuery) ────────────────────────────────────────
 
@@ -37,12 +46,7 @@ export function getAllExercisePRsQuery() {
 		.from(workoutSets)
 		.innerJoin(workoutExercises, eq(workoutSets.workoutExerciseId, workoutExercises.id))
 		.innerJoin(workoutSessions, eq(workoutExercises.workoutSessionId, workoutSessions.id))
-		.where(
-			and(
-				eq(workoutSessions.status, "completed"),
-				isNotNull(workoutSets.weight),
-			),
-		)
+		.where(and(eq(workoutSessions.status, "completed"), isNotNull(workoutSets.weight)))
 		.groupBy(workoutExercises.exerciseVariantId);
 }
 
@@ -65,13 +69,10 @@ export async function insertWeightLog(date: string, weightKg: number) {
 }
 
 export async function upsertHeight(heightCm: number) {
-	await db
-		.insert(userProfile)
-		.values({ id: 1, heightCm })
-		.onConflictDoUpdate({
-			target: userProfile.id,
-			set: { heightCm },
-		});
+	await db.insert(userProfile).values({ id: 1, heightCm }).onConflictDoUpdate({
+		target: userProfile.id,
+		set: { heightCm },
+	});
 }
 
 export async function insertBodyMeasurements(data: {
@@ -110,9 +111,24 @@ export async function deleteMeasurementField(date: string, key: string) {
 		.where(eq(bodyMeasurements.date, date));
 }
 
-type GoalType = "weight" | "bodyFat" | "shoulders" | "chest" | "waist" | "hips" | "neck" | "arms" | "thigh" | "calf";
+type GoalType =
+	| "weight"
+	| "bodyFat"
+	| "shoulders"
+	| "chest"
+	| "waist"
+	| "hips"
+	| "neck"
+	| "arms"
+	| "thigh"
+	| "calf";
 
-export async function insertGoal(data: { type: GoalType; targetValue: number; startValue: number; deadline: string }) {
+export async function insertGoal(data: {
+	type: GoalType;
+	targetValue: number;
+	startValue: number;
+	deadline: string;
+}) {
 	// One active goal per type: archive existing active goal of same type
 	await db
 		.update(goals)
@@ -123,4 +139,9 @@ export async function insertGoal(data: { type: GoalType; targetValue: number; st
 
 export async function updateGoalStatus(goalId: number, status: "achieved" | "abandoned") {
 	await db.update(goals).set({ status }).where(eq(goals.id, goalId));
+
+	if (status === "achieved") {
+		const today = new Date().toISOString().slice(0, 10);
+		await checkAndGrantAchievements(today);
+	}
 }
