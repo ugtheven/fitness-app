@@ -4,10 +4,11 @@ import { useLiveQuery } from "drizzle-orm/expo-sqlite";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BottomDrawer } from "../../components/BottomDrawer";
 import { Button } from "../../components/Button";
+import { HydrationWidget } from "../../components/HydrationWidget";
 import { db } from "../../db";
 import {
 	programs,
@@ -129,12 +130,16 @@ export default function HomeScreen() {
 
 	return (
 		<SafeAreaView className="flex-1 bg-background" edges={["top"]}>
-			<View className="flex-1 px-6 pt-2">
+			<ScrollView
+				className="flex-1"
+				contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 8, paddingBottom: spacing.navbarClearance, gap: 16 }}
+				showsVerticalScrollIndicator={false}
+			>
 				<Text className="text-2xl font-bold text-foreground">{t("tabs.home")}</Text>
-			</View>
 
-			{activeProgram ? (
-				<View style={{ paddingHorizontal: 16, marginBottom: spacing.navbarClearance }}>
+				<HydrationWidget />
+
+				{activeProgram ? (
 					<Pressable
 						onPress={() => setDrawerVisible(true)}
 						className="active:opacity-70"
@@ -165,9 +170,7 @@ export default function HomeScreen() {
 							<Ionicons name="play" size={18} color={palette.accent.DEFAULT} />
 						</View>
 					</Pressable>
-				</View>
-			) : (
-				<View style={{ paddingHorizontal: 16, marginBottom: spacing.navbarClearance }}>
+				) : (
 					<View
 						className="items-center gap-3 px-6 py-8"
 						style={{
@@ -190,8 +193,8 @@ export default function HomeScreen() {
 							/>
 						</View>
 					</View>
-				</View>
-			)}
+				)}
+			</ScrollView>
 
 			<BottomDrawer
 				visible={drawerVisible}

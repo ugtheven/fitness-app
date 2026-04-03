@@ -6,6 +6,7 @@ import m0001 from './0001_profile_tables.sql';
 import m0002 from './0002_goals.sql';
 import m0003 from './0003_add_indexes.sql';
 import m0004 from './0004_add_prescribed_rest_time.sql';
+import m0005 from './0005_hydration_tracking.sql';
 
   export default {
     journal,
@@ -14,6 +15,7 @@ import m0004 from './0004_add_prescribed_rest_time.sql';
       m0001,
       m0002,
       m0003,
-      m0004
+      m0004,
+      m0005
     }
   }

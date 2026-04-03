@@ -154,3 +154,17 @@ export const goals = sqliteTable("goals", {
 		.$defaultFn(() => new Date().toISOString())
 		.$onUpdateFn(() => new Date().toISOString()),
 });
+
+// ─── Hydration ─────────────────────────────────────────────────────────────────
+
+export const hydrationLogs = sqliteTable(
+	"hydration_logs",
+	{
+		id: int("id").primaryKey({ autoIncrement: true }),
+		date: text("date").notNull(),
+		volumeMl: real("volume_ml").notNull(),
+		goalMl: real("goal_ml").notNull(),
+		createdAt: text("created_at").$defaultFn(() => new Date().toISOString()),
+	},
+	(t) => [uniqueIndex("hydration_logs_date_idx").on(t.date)],
+);
