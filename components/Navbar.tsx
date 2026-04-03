@@ -7,6 +7,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { palette } from "../lib/palette";
+import { borders, shadows } from "../lib/tokens";
 
 const TAB_ICONS: Record<
 	string,
@@ -74,7 +75,7 @@ export function Navbar({ state, descriptors, navigation }: BottomTabBarProps) {
 							active: "ellipse" as const,
 							inactive: "ellipse-outline" as const,
 						};
-						const color = isFocused ? palette.primary.DEFAULT : palette.muted.foreground;
+						const color = isFocused ? palette.accent.DEFAULT : palette.muted.foreground;
 
 						return (
 							<Pressable
@@ -127,13 +128,9 @@ const styles = StyleSheet.create({
 	pill: {
 		borderRadius: 28,
 		overflow: "hidden",
-		borderWidth: 0.5,
+		borderWidth: borders.hairline,
 		borderColor: "rgba(255,255,255,0.08)",
-		shadowColor: "#000",
-		shadowOffset: { width: 0, height: -4 },
-		shadowOpacity: 0.35,
-		shadowRadius: 16,
-		elevation: 16,
+		...shadows.elevated,
 	},
 	overlay: {
 		backgroundColor: "rgba(17,17,17,0.12)",

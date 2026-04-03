@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
 import { palette } from "../lib/palette";
+import { borders, radius } from "../lib/tokens";
 
 type CalendarProps = {
 	selectedDate: string | null;
@@ -91,8 +92,8 @@ export function Calendar({ selectedDate, onSelectDate, workoutDates, displayMont
 					onPress={goToPreviousMonth}
 					hitSlop={12}
 					accessibilityLabel="Previous month"
-					className="items-center justify-center rounded-xl"
-					style={{ width: 36, height: 36, backgroundColor: palette.muted.DEFAULT }}
+					className="items-center justify-center"
+					style={{ width: 36, height: 36, borderRadius: radius.md, backgroundColor: palette.muted.DEFAULT }}
 				>
 					<Ionicons name="chevron-back" size={18} color={palette.foreground} />
 				</Pressable>
@@ -105,8 +106,8 @@ export function Calendar({ selectedDate, onSelectDate, workoutDates, displayMont
 					onPress={goToNextMonth}
 					hitSlop={12}
 					accessibilityLabel="Next month"
-					className="items-center justify-center rounded-xl"
-					style={{ width: 36, height: 36, backgroundColor: palette.muted.DEFAULT }}
+					className="items-center justify-center"
+					style={{ width: 36, height: 36, borderRadius: radius.md, backgroundColor: palette.muted.DEFAULT }}
 				>
 					<Ionicons name="chevron-forward" size={18} color={palette.foreground} />
 				</Pressable>
@@ -147,11 +148,11 @@ export function Calendar({ selectedDate, onSelectDate, workoutDates, displayMont
 								<View
 									className="items-center justify-center"
 									style={[
-										{ width: 34, height: 34, borderRadius: 10 },
+										{ width: 34, height: 34, borderRadius: radius.sm },
 										isSelected && { backgroundColor: palette.muted.DEFAULT },
 										isToday && !isSelected && {
-											borderWidth: 1.5,
-											borderColor: palette.primary.DEFAULT,
+											borderWidth: borders.emphasis,
+											borderColor: palette.accent.DEFAULT,
 										},
 									]}
 								>
@@ -177,7 +178,7 @@ export function Calendar({ selectedDate, onSelectDate, workoutDates, displayMont
 											width: 5,
 											height: 5,
 											borderRadius: 2.5,
-											backgroundColor: palette.primary.DEFAULT,
+											backgroundColor: palette.accent.DEFAULT,
 											marginTop: 2,
 										}}
 									/>

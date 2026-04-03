@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { useLiveQuery } from "drizzle-orm/expo-sqlite";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BottomDrawer } from "../../components/BottomDrawer";
+import { Button } from "../../components/Button";
 import { db } from "../../db";
 import {
 	programs,
@@ -16,6 +17,7 @@ import {
 	workoutSessions,
 } from "../../db/schema";
 import { palette } from "../../lib/palette";
+import { borders, radius, spacing } from "../../lib/tokens";
 
 export default function HomeScreen() {
 	const { t } = useTranslation();
@@ -44,57 +46,8 @@ export default function HomeScreen() {
 
 	const sessionCount = programSessions?.length ?? 0;
 
-	// Find the last completed workout for the active program to suggest the next session
-	const { data: lastCompletedWorkouts } = useLiveQuery(
-		db
-			.select({ sessionId: workoutSessions.sessionId })
-			.from(workoutSessions)
-			.where(
-				and(
-					eq(workoutSessions.status, "completed"),
-					eq(workoutSessions.programId, activeProgram?.id ?? -1),
-				),
-			)
-			.orderBy(desc(workoutSessions.startedAt))
-			.limit(1)
-	);
-
-	// Suggest next session in order (cycle back to first after last)
-	const nextSession = (() => {
-		if (!programSessions || programSessions.length === 0) return null;
-		const lastSessionId = lastCompletedWorkouts?.[0]?.sessionId;
-		if (lastSessionId == null) return programSessions[0];
-		const lastIndex = programSessions.findIndex((s) => s.sessions.id === lastSessionId);
-		if (lastIndex === -1) return programSessions[0];
-		return programSessions[(lastIndex + 1) % programSessions.length];
-	})();
-
-	async function handleSessionSelect(sessionId: number) {
+	function handleSessionSelect(sessionId: number) {
 		if (launchingSessionId !== null) return;
-
-		// Check for in-progress workout before overwriting
-		const inProgress = await db
-			.select({ id: workoutSessions.id })
-			.from(workoutSessions)
-			.where(eq(workoutSessions.status, "in_progress"))
-			.limit(1);
-
-		if (inProgress.length > 0) {
-			Alert.alert(
-				t("home.inProgressTitle"),
-				t("home.inProgressMessage"),
-				[
-					{ text: t("common.cancel"), style: "cancel" },
-					{
-						text: t("home.startNew"),
-						style: "destructive",
-						onPress: () => launchSession(sessionId),
-					},
-				],
-			);
-			return;
-		}
-
 		launchSession(sessionId);
 	}
 
@@ -103,8 +56,8 @@ export default function HomeScreen() {
 		try {
 			const workoutSessionId = await db.transaction(async (tx) => {
 				// Design choice: in-progress sessions are NOT resumable. Starting a new
-				// session destroys any interrupted one (workoutExercises + workoutSets
-				// are cascade-deleted). The user is warned via Alert before reaching here.
+				// session silently destroys any interrupted one (workoutExercises +
+				// workoutSets are cascade-deleted).
 				await tx.delete(workoutSessions)
 					.where(eq(workoutSessions.status, "in_progress"));
 
@@ -162,70 +115,45 @@ export default function HomeScreen() {
 			</View>
 
 			{activeProgram ? (
-				<View style={{ paddingHorizontal: 16, marginBottom: 112, gap: 10 }}>
-					{/* Next session suggestion */}
-					{nextSession && (
-						<Pressable
-							onPress={() => handleSessionSelect(nextSession.sessions.id)}
-							className="active:opacity-80"
-						>
-							<View
-								className="flex-row items-center gap-3 px-4 py-3"
-								style={{
-									backgroundColor: palette.card.DEFAULT,
-									borderRadius: 18,
-									borderWidth: 1.5,
-									borderColor: palette.primary.DEFAULT,
-								}}
-							>
-								<View
-									className="rounded-xl p-2"
-									style={{ backgroundColor: `${palette.primary.DEFAULT}26` }}
-								>
-									<Ionicons name="flash" size={18} color={palette.primary.DEFAULT} />
-								</View>
-								<View className="flex-1">
-									<Text className="text-xs font-semibold" style={{ color: palette.primary.DEFAULT }}>
-										{t("home.nextSession")} · {activeProgram.name}
-									</Text>
-									<Text className="text-base font-bold text-foreground">
-										{nextSession.sessions.name}
-									</Text>
-								</View>
-								{launchingSessionId === nextSession.sessions.id ? (
-									<ActivityIndicator size="small" color={palette.primary.DEFAULT} />
-								) : (
-									<Ionicons name="chevron-forward" size={18} color={palette.primary.DEFAULT} />
-								)}
-							</View>
-						</Pressable>
-					)}
-
-					{/* All sessions */}
+				<View style={{ paddingHorizontal: 16, marginBottom: spacing.navbarClearance }}>
 					<Pressable
 						onPress={() => setDrawerVisible(true)}
-						className="active:opacity-80"
+						className="active:opacity-70"
 					>
 						<View
-							className="flex-row items-center justify-center gap-2 px-4 py-2.5"
+							className="flex-row items-center gap-3 px-5 py-4"
 							style={{
-								backgroundColor: palette.muted.DEFAULT,
-								borderRadius: 14,
+								backgroundColor: palette.card.DEFAULT,
+								borderRadius: radius.lg,
+								borderWidth: borders.emphasis,
+								borderColor: palette.accent.DEFAULT,
 							}}
 						>
-							<Text className="text-sm font-medium" style={{ color: palette.muted.foreground }}>
-								{t("programs.sessionCount", { count: sessionCount })} · {t("programs.tapToStart")}
-							</Text>
+							<View
+								className="p-2"
+								style={{ backgroundColor: palette.accent.muted, borderRadius: radius.md }}
+							>
+								<Ionicons name="barbell-outline" size={18} color={palette.accent.DEFAULT} />
+							</View>
+							<View className="flex-1">
+								<Text className="text-xs font-semibold" style={{ color: palette.accent.DEFAULT }}>
+									{activeProgram.name}
+								</Text>
+								<Text className="text-base font-bold text-foreground">
+									{t("programs.sessionCount", { count: sessionCount })}
+								</Text>
+							</View>
+							<Ionicons name="chevron-forward" size={18} color={palette.accent.DEFAULT} />
 						</View>
 					</Pressable>
 				</View>
 			) : (
-				<View style={{ paddingHorizontal: 16, marginBottom: 112 }}>
+				<View style={{ paddingHorizontal: 16, marginBottom: spacing.navbarClearance }}>
 					<View
 						className="items-center gap-3 px-6 py-8"
 						style={{
 							backgroundColor: palette.card.DEFAULT,
-							borderRadius: 18,
+							borderRadius: radius.lg,
 						}}
 					>
 						<Ionicons name="barbell-outline" size={32} color={palette.muted.foreground} />
@@ -235,19 +163,13 @@ export default function HomeScreen() {
 						<Text className="text-sm text-center" style={{ color: palette.muted.foreground }}>
 							{t("home.emptyHint")}
 						</Text>
-						<Pressable
-							onPress={() => router.push("/(tabs)/programs")}
-							className="active:opacity-80 mt-1"
-						>
-							<View
-								className="px-5 py-2.5 rounded-xl"
-								style={{ backgroundColor: palette.primary.DEFAULT }}
-							>
-								<Text className="text-sm font-semibold text-foreground">
-									{t("home.createProgram")}
-								</Text>
-							</View>
-						</Pressable>
+						<View className="mt-1">
+							<Button
+								variant="glow"
+								label={t("home.createProgram")}
+								onPress={() => router.push("/(tabs)/programs")}
+							/>
+						</View>
 					</View>
 				</View>
 			)}
@@ -266,7 +188,7 @@ export default function HomeScreen() {
 							className="active:opacity-70"
 						>
 							<View
-								className="flex-row items-center gap-3 rounded-2xl px-4 py-4"
+								className="flex-row items-center gap-3 rounded-2xl px-5 py-4"
 								style={{ backgroundColor: palette.muted.DEFAULT }}
 							>
 								<View className="flex-1">
@@ -278,7 +200,7 @@ export default function HomeScreen() {
 									</Text>
 								</View>
 								{launchingSessionId === session.id ? (
-									<ActivityIndicator size="small" color={palette.primary.DEFAULT} />
+									<ActivityIndicator size="small" color={palette.accent.DEFAULT} />
 								) : (
 									<Ionicons name="chevron-forward" size={18} color={palette.muted.foreground} />
 								)}

@@ -5,6 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ScreenHeader } from "../components/ScreenHeader";
 import { changeLanguage, type Language } from "../lib/i18n";
 import { palette } from "../lib/palette";
+import { borders, radius } from "../lib/tokens";
 import { useUnits, type UnitSystem } from "../lib/units";
 
 export default function SettingsScreen() {
@@ -29,7 +30,7 @@ export default function SettingsScreen() {
 					>
 						{t("settings.language")}
 					</Text>
-					<View className="rounded-2xl overflow-hidden" style={{ backgroundColor: palette.card.DEFAULT }}>
+					<View className="overflow-hidden" style={{ backgroundColor: palette.card.DEFAULT, borderRadius: radius.lg }}>
 						{(["en", "fr"] as Language[]).map((lang, index, arr) => (
 							<Pressable
 								key={lang}
@@ -38,7 +39,7 @@ export default function SettingsScreen() {
 							>
 								<View
 									className="flex-row items-center justify-between px-5 py-4"
-									style={index < arr.length - 1 ? { borderBottomWidth: 1, borderBottomColor: palette.border } : undefined}
+									style={index < arr.length - 1 ? { borderBottomWidth: borders.hairline, borderBottomColor: palette.separator } : undefined}
 								>
 									<Text className="text-base text-foreground">
 										{lang === "en" ? t("settings.english") : t("settings.french")}
@@ -64,7 +65,7 @@ export default function SettingsScreen() {
 						>
 							{t("settings.units")}
 						</Text>
-						<View className="rounded-2xl overflow-hidden" style={{ backgroundColor: palette.card.DEFAULT }}>
+						<View className="overflow-hidden" style={{ backgroundColor: palette.card.DEFAULT, borderRadius: radius.lg }}>
 							{(["metric", "imperial"] as UnitSystem[]).map((u, index, arr) => (
 								<Pressable
 									key={u}
@@ -73,7 +74,7 @@ export default function SettingsScreen() {
 								>
 									<View
 										className="flex-row items-center justify-between px-5 py-4"
-										style={index < arr.length - 1 ? { borderBottomWidth: 1, borderBottomColor: palette.border } : undefined}
+										style={index < arr.length - 1 ? { borderBottomWidth: borders.hairline, borderBottomColor: palette.separator } : undefined}
 									>
 										<Text className="text-base text-foreground">
 											{t(`settings.${u}`)}

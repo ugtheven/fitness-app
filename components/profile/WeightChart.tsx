@@ -147,7 +147,7 @@ function ChartContent({ data }: { data: DataPoint[] }) {
 				{/* Data line */}
 				<Path
 					d={chart.dataPath}
-					stroke={palette.primary.DEFAULT}
+					stroke={palette.accent.DEFAULT}
 					strokeWidth={2.5}
 					fill="none"
 				/>
@@ -160,7 +160,7 @@ function ChartContent({ data }: { data: DataPoint[] }) {
 						cy={chart.toY(p.y)}
 						r={4}
 						fill={palette.background}
-						stroke={palette.primary.DEFAULT}
+						stroke={palette.accent.DEFAULT}
 						strokeWidth={2}
 					/>
 				))}
@@ -170,7 +170,7 @@ function ChartContent({ data }: { data: DataPoint[] }) {
 					<SvgText
 						x={chart.toX(chart.latestPoint.x)}
 						y={chart.toY(chart.latestPoint.y) - 10}
-						fill={palette.primary.DEFAULT}
+						fill={palette.accent.DEFAULT}
 						fontSize={11}
 						fontWeight="bold"
 						textAnchor="middle"

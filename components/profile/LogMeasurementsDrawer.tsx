@@ -88,7 +88,7 @@ export function LogMeasurementsDrawer({ visible, onClose, lastValues }: Props) {
 					/>
 				))}
 				<View className="mt-2">
-					<Button label={t("profile.save")} onPress={handleSave} loading={saving} fullWidth />
+					<Button variant="glow" label={t("profile.save")} onPress={handleSave} loading={saving} fullWidth />
 				</View>
 			</View>
 		</BottomDrawer>

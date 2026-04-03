@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { Button } from "../Button";
 import { palette } from "../../lib/palette";
+import { radius } from "../../lib/tokens";
 import {
 	getLatestMeasurementsQuery,
 	getTwoLatestWeightsQuery,
@@ -21,9 +22,9 @@ type MeasurementKey = "bodyFat" | "shoulders" | "chest" | "waist" | "hips" | "ne
 
 const MEASUREMENT_KEYS: MeasurementKey[] = ["bodyFat", "shoulders", "chest", "waist", "hips", "neck", "arms", "thigh", "calf"];
 const MEASUREMENT_COLORS: Record<MeasurementKey, string> = {
-	bodyFat: "#4CAF50",
-	shoulders: "#2196F3", chest: "#2196F3", waist: "#2196F3", hips: "#2196F3",
-	neck: "#2196F3", arms: "#2196F3", thigh: "#2196F3", calf: "#2196F3",
+	bodyFat: palette.accent.DEFAULT,
+	shoulders: palette.secondary.DEFAULT, chest: palette.secondary.DEFAULT, waist: palette.secondary.DEFAULT, hips: palette.secondary.DEFAULT,
+	neck: palette.secondary.DEFAULT, arms: palette.secondary.DEFAULT, thigh: palette.secondary.DEFAULT, calf: palette.secondary.DEFAULT,
 };
 
 export function BodyTab() {
@@ -52,8 +53,8 @@ export function BodyTab() {
 				contentContainerStyle={{ paddingTop: 16, paddingBottom: 100, gap: 16 }}
 			>
 				{/* Weight + Height cards */}
-				<View className="flex-row gap-3">
-					<View className="flex-1 rounded-2xl px-4 py-3" style={{ backgroundColor: palette.card.DEFAULT }}>
+				<View className="flex-row gap-3" style={{ alignItems: "stretch" }}>
+					<View className="flex-1 px-4 py-3" style={{ backgroundColor: palette.card.DEFAULT, borderRadius: radius.lg }}>
 						<Text className="text-xs font-medium mb-1" style={{ color: palette.muted.foreground }}>
 							{t("profile.weight")}
 						</Text>
@@ -70,9 +71,9 @@ export function BodyTab() {
 								<Ionicons
 									name={weightDelta >= 0 ? "trending-up" : "trending-down"}
 									size={14}
-									color={palette.primary.DEFAULT}
+									color={palette.accent.DEFAULT}
 								/>
-								<Text className="text-xs font-semibold" style={{ color: palette.primary.DEFAULT }}>
+								<Text className="text-xs font-semibold" style={{ color: palette.accent.DEFAULT }}>
 									{weightDelta >= 0 ? "+" : ""}{displayWeight(Math.abs(weightDelta))} {weightUnit}
 								</Text>
 							</View>
@@ -80,7 +81,7 @@ export function BodyTab() {
 					</View>
 
 					<Pressable className="flex-1 active:opacity-70" onPress={() => setShowHeightDrawer(true)}>
-						<View className="rounded-2xl px-4 py-3" style={{ backgroundColor: palette.card.DEFAULT }}>
+						<View className="flex-1 px-4 py-3" style={{ backgroundColor: palette.card.DEFAULT, borderRadius: radius.lg }}>
 							<View className="flex-row items-center justify-between mb-1">
 								<Text className="text-xs font-medium" style={{ color: palette.muted.foreground }}>
 									{t("profile.height")}
@@ -104,10 +105,11 @@ export function BodyTab() {
 
 				{/* Log Weight button */}
 				<Button
+					variant="glow"
 					label={t("profile.logWeight")}
 					onPress={() => setShowWeightDrawer(true)}
 					fullWidth
-					startIcon={<Ionicons name="add" size={20} color={palette.primary.foreground} />}
+					startIcon={<Ionicons name="add" size={20} />}
 				/>
 
 				{/* Measurements section */}
@@ -126,11 +128,12 @@ export function BodyTab() {
 						return (
 							<View
 								key={key}
-								className="rounded-2xl px-3 py-3 items-center"
+								className="px-3 py-3 items-center"
 								style={{
 									backgroundColor: palette.card.DEFAULT,
 									width: "31%",
 									flexGrow: 1,
+									borderRadius: radius.lg,
 								}}
 							>
 								<Text className="text-xs font-medium mb-1" style={{ color: palette.muted.foreground }}>
@@ -159,10 +162,11 @@ export function BodyTab() {
 
 				{/* Log Measurements button */}
 				<Button
+					variant="glow"
 					label={t("profile.logMeasurements")}
 					onPress={() => setShowMeasurementsDrawer(true)}
 					fullWidth
-					startIcon={<Ionicons name="add" size={20} color={palette.primary.foreground} />}
+					startIcon={<Ionicons name="add" size={20} />}
 				/>
 			</ScrollView>
 

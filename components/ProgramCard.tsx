@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
 import { palette } from "../lib/palette";
+import { radius } from "../lib/tokens";
 import { IconButton } from "./IconButton";
 
 type ProgramSession = { id: number; name: string };
@@ -23,8 +24,8 @@ export function ProgramCard({ name, sessionCount, exerciseCount, sessions, onPre
 
 	return (
 		<Pressable onPress={onPress} className="active:opacity-70">
-			<View className="flex-row items-center gap-4 rounded-2xl bg-card px-5 py-4">
-				<View className="rounded-xl bg-muted p-2.5">
+			<View className="flex-row items-center gap-4 bg-card px-5 py-4" style={{ borderRadius: radius.lg }}>
+				<View className="bg-muted p-2.5" style={{ borderRadius: radius.md }}>
 					<Ionicons name="barbell-outline" size={20} color={palette.muted.foreground} />
 				</View>
 
@@ -56,7 +57,7 @@ export function ProgramCard({ name, sessionCount, exerciseCount, sessions, onPre
 					<IconButton
 						name="trash-outline"
 						size={18}
-						color="#ef4444"
+						color={palette.destructive.DEFAULT}
 						onPress={onDelete}
 						accessibilityLabel={t("common.delete")}
 					/>

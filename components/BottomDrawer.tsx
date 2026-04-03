@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { palette } from "../lib/palette";
+import { radius, spacing } from "../lib/tokens";
 
 const { height: SCREEN_H } = Dimensions.get("window");
 const HEADER_H = 64;
@@ -50,7 +51,7 @@ export function BottomDrawer({ visible, onClose, onBack, title, children }: Bott
 					style={{
 						width: "100%",
 						backgroundColor: palette.card.DEFAULT,
-						borderRadius: 24,
+						borderRadius: radius.xl,
 					}}
 				>
 					<View
@@ -84,7 +85,7 @@ export function BottomDrawer({ visible, onClose, onBack, title, children }: Bott
 								keyboardShouldPersistTaps="handled"
 								keyboardDismissMode="interactive"
 								showsVerticalScrollIndicator={false}
-								contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 }}
+								contentContainerStyle={{ paddingHorizontal: spacing.cardPx, paddingTop: spacing.cardPy, paddingBottom: 8 }}
 							>
 								{children}
 							</ScrollView>

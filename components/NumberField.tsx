@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 import { palette } from "../lib/palette";
+import { radius } from "../lib/tokens";
 
 export type NumberFieldProps = {
 	label?: string;
@@ -66,11 +67,12 @@ export function NumberField({
 	return (
 		<View className="gap-1.5">
 			{label && <Text className="text-sm font-medium text-foreground">{label}</Text>}
-			<View className="flex-row items-center gap-2 rounded-2xl border border-border bg-background p-2">
+			<View className="flex-row items-center gap-2 border border-border bg-background p-2" style={{ borderRadius: radius.lg }}>
 				{/* − */}
 				<Pressable
 					onPress={decrement}
-					className="h-12 w-12 items-center justify-center rounded-xl bg-muted active:opacity-50"
+					className="h-12 w-12 items-center justify-center bg-muted active:opacity-50"
+					style={{ borderRadius: radius.md }}
 					accessibilityRole="button"
 					accessibilityLabel="Diminuer"
 					hitSlop={4}
@@ -95,7 +97,8 @@ export function NumberField({
 				{/* + */}
 				<Pressable
 					onPress={increment}
-					className="h-12 w-12 items-center justify-center rounded-xl bg-muted active:opacity-50"
+					className="h-12 w-12 items-center justify-center bg-muted active:opacity-50"
+					style={{ borderRadius: radius.md }}
 					accessibilityRole="button"
 					accessibilityLabel="Augmenter"
 					hitSlop={4}

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { palette } from "../lib/palette";
+import { radius } from "../lib/tokens";
 
 type Tab = {
 	label: string;
@@ -73,7 +74,7 @@ const styles = StyleSheet.create({
 	container: {
 		flexDirection: "row",
 		backgroundColor: palette.muted.DEFAULT,
-		borderRadius: 16,
+		borderRadius: radius.lg,
 		padding: 3,
 		position: "relative",
 	},
@@ -81,7 +82,7 @@ const styles = StyleSheet.create({
 		position: "absolute",
 		top: 3,
 		bottom: 3,
-		borderRadius: 13,
+		borderRadius: radius.md,
 		backgroundColor: palette.card.DEFAULT,
 	},
 	tab: {

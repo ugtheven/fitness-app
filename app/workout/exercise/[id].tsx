@@ -18,6 +18,7 @@ import { EXERCISE_VARIANTS_BY_ID } from "../../../lib/exerciseVariants";
 import { type PrefillSet, getExercisePR, getLastSets } from "../../../lib/workoutHistory";
 import { useSessionTimer } from "../../../lib/useSessionTimer";
 import { palette } from "../../../lib/palette";
+import { glass, radius, typography } from "../../../lib/tokens";
 import { useUnits } from "../../../lib/units";
 
 export default function ExerciseScreen() {
@@ -137,7 +138,7 @@ export default function ExerciseScreen() {
 	if (!exerciseRow || isPrefillLoading) {
 		return (
 			<SafeAreaView className="flex-1 bg-background items-center justify-center" edges={["top"]}>
-				<ActivityIndicator size="large" color={palette.primary.DEFAULT} />
+				<ActivityIndicator size="large" color={palette.accent.DEFAULT} />
 			</SafeAreaView>
 		);
 	}
@@ -296,10 +297,10 @@ export default function ExerciseScreen() {
 
 	const timerPill = (
 		<View
-			className="px-3 py-1.5 rounded-xl"
-			style={{ backgroundColor: `${palette.primary.DEFAULT}20`, borderWidth: 1, borderColor: `${palette.primary.DEFAULT}40` }}
+			className="px-3 py-1.5"
+			style={{ backgroundColor: palette.accent.muted, borderWidth: 1, borderColor: palette.accent.border, borderRadius: radius.md }}
 		>
-			<Text className="text-sm font-bold tabular-nums" style={{ color: palette.primary.DEFAULT }}>
+			<Text className="text-sm font-bold tabular-nums" style={{ color: palette.accent.DEFAULT }}>
 				{timerLabel}
 			</Text>
 		</View>
@@ -326,8 +327,8 @@ export default function ExerciseScreen() {
 					{completedSets.map((s) => (
 						<View
 							key={s.id}
-							className="flex-row items-center justify-between rounded-2xl px-4 py-3"
-							style={{ backgroundColor: palette.card.DEFAULT }}
+							className="flex-row items-center justify-between px-4 py-3"
+							style={{ backgroundColor: palette.card.DEFAULT, borderRadius: radius.lg }}
 						>
 							<Text className="text-sm font-semibold text-foreground">
 								Set {s.setIndex + 1}
@@ -344,7 +345,7 @@ export default function ExerciseScreen() {
 									</Text>
 								)}
 								{s.weight != null && (
-									<Text className="text-sm font-semibold" style={{ color: palette.primary.DEFAULT }}>
+									<Text className="text-sm font-semibold" style={{ color: palette.accent.DEFAULT }}>
 										{displayWeight(s.weight)} {weightUnit}
 									</Text>
 								)}
@@ -393,23 +394,24 @@ export default function ExerciseScreen() {
 										return (
 											<View
 												key={side}
-												className="flex-row items-center gap-1.5 px-4 py-2 rounded-xl"
+												className="flex-row items-center gap-1.5 px-4 py-2"
 												style={{
+													borderRadius: radius.md,
 													backgroundColor: isDone
-														? `${palette.primary.DEFAULT}26`
+														? palette.accent.muted
 														: isActive
-															? `${palette.primary.DEFAULT}20`
+															? palette.accent.muted
 															: palette.muted.DEFAULT,
 													borderWidth: isActive ? 1 : 0,
-													borderColor: palette.primary.DEFAULT,
+													borderColor: palette.accent.DEFAULT,
 												}}
 											>
 												{isDone && (
-													<Ionicons name="checkmark" size={14} color={palette.primary.DEFAULT} />
+													<Ionicons name="checkmark" size={14} color={palette.accent.DEFAULT} />
 												)}
 												<Text
 													className="text-sm font-semibold"
-													style={{ color: isActive || isDone ? palette.primary.DEFAULT : palette.muted.foreground }}
+													style={{ color: isActive || isDone ? palette.accent.DEFAULT : palette.muted.foreground }}
 												>
 													{side === "left" ? t("workout.repsLeft") : t("workout.repsRight")}
 												</Text>
@@ -459,8 +461,8 @@ export default function ExerciseScreen() {
 						) : (
 							<Pressable
 								onPress={() => setShowWeightInput(true)}
-								className="items-center justify-center rounded-2xl active:opacity-70"
-								style={{ backgroundColor: palette.card.DEFAULT, height: 56 }}
+								className="items-center justify-center active:opacity-70"
+								style={{ backgroundColor: palette.card.DEFAULT, height: 56, borderRadius: radius.lg }}
 							>
 								<Text className="text-sm font-medium" style={{ color: palette.muted.foreground }}>
 									+ {t("workout.addWeight")}
@@ -478,14 +480,14 @@ export default function ExerciseScreen() {
 					{undoSetId != null && (
 						<Animated.View
 							entering={FadeIn.duration(200)}
-							className="mx-6 rounded-2xl px-4 py-3 flex-row items-center justify-between"
-							style={{ backgroundColor: palette.muted.DEFAULT }}
+							className="mx-6 px-4 py-3 flex-row items-center justify-between"
+							style={{ backgroundColor: palette.muted.DEFAULT, borderRadius: radius.lg }}
 						>
 							<Text className="text-sm" style={{ color: palette.foreground }}>
 								{t("workout.setLogged")}
 							</Text>
 							<Pressable onPress={handleUndo} className="active:opacity-70">
-								<Text className="text-sm font-bold" style={{ color: palette.primary.DEFAULT }}>
+								<Text className="text-sm font-bold" style={{ color: palette.accent.DEFAULT }}>
 									{t("workout.undo")}
 								</Text>
 							</Pressable>
@@ -495,6 +497,7 @@ export default function ExerciseScreen() {
 					{/* Bouton fixe en bas */}
 					<View className="px-6 pb-6 pt-4">
 						<Button
+							variant="glow"
 							fullWidth
 							label={
 								isUnilateral && unilateralSide === "left"
@@ -514,7 +517,7 @@ export default function ExerciseScreen() {
 
 			{/* Rest overlay — couvre tout l'écran y compris le header */}
 			{isResting && (
-				<BlurView style={StyleSheet.absoluteFillObject} intensity={80} tint="dark">
+				<BlurView style={StyleSheet.absoluteFillObject} intensity={glass.blurModal} tint="dark">
 					<View className="flex-1 items-center justify-center gap-8 px-6">
 						<View className="items-center gap-2">
 							<Text className="text-base font-semibold" style={{ color: palette.muted.foreground }}>
@@ -529,7 +532,7 @@ export default function ExerciseScreen() {
 
 						<View className="flex-row items-center gap-6">
 							<Pressable onPress={addRestTime} className="active:opacity-70 px-5 py-3">
-								<Text className="text-base font-semibold" style={{ color: palette.primary.DEFAULT }}>+30s</Text>
+								<Text className="text-base font-semibold" style={{ color: palette.accent.DEFAULT }}>+30s</Text>
 							</Pressable>
 							<Pressable onPress={skipRest} className="active:opacity-70 px-5 py-3">
 								<Text className="text-base font-semibold" style={{ color: palette.muted.foreground }}>{t("common.skip")}</Text>
@@ -547,7 +550,7 @@ export default function ExerciseScreen() {
 function AnimatedSegment({ state }: { state: "done" | "current" | "pending" }) {
 	const targetColor =
 		state === "done"
-			? palette.primary.DEFAULT
+			? palette.accent.DEFAULT
 			: state === "current"
 				? palette.foreground
 				: palette.muted.DEFAULT;
@@ -584,7 +587,7 @@ function RestRing({ secondsLeft, totalSeconds, label, sublabel }: { secondsLeft:
 					cx={RING_CENTER}
 					cy={RING_CENTER}
 					r={RING_RADIUS}
-					stroke={palette.primary.DEFAULT}
+					stroke={palette.accent.DEFAULT}
 					strokeWidth={RING_STROKE}
 					fill="none"
 					strokeDasharray={CIRCUMFERENCE}
@@ -594,7 +597,7 @@ function RestRing({ secondsLeft, totalSeconds, label, sublabel }: { secondsLeft:
 			</Svg>
 			{/* Timer label centered */}
 			<View style={StyleSheet.absoluteFillObject} className="items-center justify-center">
-				<Text className="font-bold tabular-nums" style={{ fontSize: 52, color: palette.foreground, lineHeight: 60 }}>
+				<Text className="font-bold tabular-nums" style={{ ...typography.displayMd, color: palette.foreground }}>
 					{label}
 				</Text>
 				<Text className="text-xs font-medium mt-1" style={{ color: palette.muted.foreground }}>
@@ -612,8 +615,8 @@ type CircleButtonProps = {
 };
 
 function CircleButton({ symbol, variant, onPress }: CircleButtonProps) {
-	const bg = variant === "primary" ? `${palette.primary.DEFAULT}30` : palette.muted.DEFAULT;
-	const color = variant === "primary" ? palette.primary.DEFAULT : palette.foreground;
+	const bg = variant === "primary" ? palette.accent.muted : palette.muted.DEFAULT;
+	const color = variant === "primary" ? palette.accent.DEFAULT : palette.foreground;
 	return (
 		<Pressable
 			onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onPress(); }}
@@ -636,7 +639,7 @@ type ValueCardProps = {
 
 function ValueCard({ label, value, target, targetLabel, onDecrement, onIncrement }: ValueCardProps) {
 	return (
-		<View className="rounded-2xl px-6 py-5" style={{ backgroundColor: palette.card.DEFAULT }}>
+		<View className="px-6 py-5" style={{ backgroundColor: palette.card.DEFAULT, borderRadius: radius.lg }}>
 			<Text
 				className="text-xs font-semibold text-center tracking-widest mb-4"
 				style={{ color: palette.muted.foreground }}
@@ -645,7 +648,7 @@ function ValueCard({ label, value, target, targetLabel, onDecrement, onIncrement
 			</Text>
 			<View className="flex-row items-center justify-between">
 				<CircleButton symbol="−" variant="muted" onPress={onDecrement} />
-				<Text className="font-bold" style={{ fontSize: 64, color: palette.foreground, lineHeight: 72 }}>
+				<Text className="font-bold" style={{ ...typography.displayLg, color: palette.foreground }}>
 					{value}
 				</Text>
 				<CircleButton symbol="+" variant="primary" onPress={onIncrement} />
@@ -663,11 +666,11 @@ function PRBadge({ label }: { label: string }) {
 	return (
 		<Animated.View
 			entering={FadeIn.duration(300)}
-			className="mx-6 rounded-2xl px-4 py-3 flex-row items-center justify-center gap-2"
-			style={{ backgroundColor: `${palette.primary.DEFAULT}20`, borderWidth: 1, borderColor: `${palette.primary.DEFAULT}40` }}
+			className="mx-6 px-4 py-3 flex-row items-center justify-center gap-2"
+			style={{ backgroundColor: palette.accent.muted, borderWidth: 1, borderColor: palette.accent.border, borderRadius: radius.lg }}
 		>
-			<Ionicons name="flash" size={16} color={palette.primary.DEFAULT} />
-			<Text className="text-sm font-bold" style={{ color: palette.primary.DEFAULT }}>
+			<Ionicons name="flash" size={16} color={palette.accent.DEFAULT} />
+			<Text className="text-sm font-bold" style={{ color: palette.accent.DEFAULT }}>
 				{label}
 			</Text>
 		</Animated.View>
@@ -687,7 +690,7 @@ type WeightCardProps = {
 function WeightCard({ label, value, step, onDecrement, onIncrement, onQuickChange, onDismiss }: WeightCardProps) {
 	const quickDeltas = [-step * 2, -step, step, step * 2];
 	return (
-		<View className="rounded-2xl px-6 py-5" style={{ backgroundColor: palette.card.DEFAULT }}>
+		<View className="px-6 py-5" style={{ backgroundColor: palette.card.DEFAULT, borderRadius: radius.lg }}>
 			<Text
 				className="text-xs font-semibold text-center tracking-widest mb-4"
 				style={{ color: palette.muted.foreground }}
@@ -696,7 +699,7 @@ function WeightCard({ label, value, step, onDecrement, onIncrement, onQuickChang
 			</Text>
 			<View className="flex-row items-center justify-between">
 				<CircleButton symbol="−" variant="muted" onPress={onDecrement} />
-				<Text className="font-bold" style={{ fontSize: 64, color: palette.foreground, lineHeight: 72 }}>
+				<Text className="font-bold" style={{ ...typography.displayLg, color: palette.foreground }}>
 					{value}
 				</Text>
 				<CircleButton symbol="+" variant="primary" onPress={onIncrement} />
@@ -710,15 +713,16 @@ function WeightCard({ label, value, step, onDecrement, onIncrement, onQuickChang
 							key={delta}
 							onPress={() => onQuickChange(delta)}
 							disabled={isDisabled}
-							className="flex-1 items-center justify-center rounded-xl py-2 active:opacity-60"
+							className="flex-1 items-center justify-center py-2 active:opacity-60"
 							style={{
-								backgroundColor: isPositive ? `${palette.primary.DEFAULT}20` : palette.muted.DEFAULT,
+								borderRadius: radius.md,
+								backgroundColor: isPositive ? palette.accent.muted : palette.muted.DEFAULT,
 								opacity: isDisabled ? 0.3 : 1,
 							}}
 						>
 							<Text
 								className="text-xs font-semibold"
-								style={{ color: isPositive ? palette.primary.DEFAULT : palette.muted.foreground }}
+								style={{ color: isPositive ? palette.accent.DEFAULT : palette.muted.foreground }}
 							>
 								{isPositive ? `+${delta}` : delta}
 							</Text>

@@ -129,8 +129,9 @@ export default function ProgramScreen() {
 				onBack={() => router.back()}
 				action={
 					<Button
+						variant="glow"
 						label={t("common.session")}
-						startIcon={<Ionicons name="add" size={20} color="white" />}
+						startIcon={<Ionicons name="add" size={20} />}
 						onPress={() => setDrawerOpen(true)}
 					/>
 				}
@@ -163,7 +164,7 @@ export default function ProgramScreen() {
 						returnKeyType="done"
 						onSubmitEditing={handleCreate}
 					/>
-					<Button fullWidth label={t("common.create")} onPress={handleCreate} />
+					<Button variant="glow" fullWidth label={t("common.create")} onPress={handleCreate} />
 				</View>
 			</BottomDrawer>
 		</SafeAreaView>

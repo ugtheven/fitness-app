@@ -12,6 +12,7 @@ import { sessions, workoutSessions } from "../../db/schema";
 import type { Equipment } from "../../lib/exerciseTypes";
 import { EXERCISE_VARIANTS_BY_ID } from "../../lib/exerciseVariants";
 import { palette } from "../../lib/palette";
+import { borders, radius, typography } from "../../lib/tokens";
 import { useUnits } from "../../lib/units";
 import {
 	getExerciseHistoryDetailed,
@@ -159,7 +160,7 @@ export default function WorkoutDetailScreen() {
 	if (isLoading) {
 		return (
 			<SafeAreaView className="flex-1 bg-background items-center justify-center" edges={["top"]}>
-				<ActivityIndicator size="large" color={palette.primary.DEFAULT} />
+				<ActivityIndicator size="large" color={palette.accent.DEFAULT} />
 			</SafeAreaView>
 		);
 	}
@@ -202,37 +203,38 @@ export default function WorkoutDetailScreen() {
 							className="active:opacity-70"
 						>
 							<View
-								className="rounded-2xl px-4 py-4"
+								className="px-5 py-4"
 								style={{
 									backgroundColor: palette.card.DEFAULT,
-									borderWidth: pr ? 1 : 0,
-									borderColor: `${palette.primary.DEFAULT}40`,
+									borderRadius: radius.lg,
+									borderWidth: pr ? borders.thin : 0,
+									borderColor: palette.accent.border,
 								}}
 							>
 								<View className="flex-row items-center gap-3 mb-3">
 									<View
 										className="w-8 h-8 rounded-full items-center justify-center"
-										style={{ backgroundColor: pr ? `${palette.primary.DEFAULT}20` : palette.muted.DEFAULT }}
+										style={{ backgroundColor: pr ? palette.accent.muted : palette.muted.DEFAULT }}
 									>
 										<Ionicons
 											name={pr ? "flash" : icon}
 											size={16}
-											color={pr ? palette.primary.DEFAULT : palette.muted.foreground}
+											color={pr ? palette.accent.DEFAULT : palette.muted.foreground}
 										/>
 									</View>
 									<Text className="flex-1 text-base font-semibold text-foreground" numberOfLines={1}>
 										{name}
 									</Text>
-									<Ionicons name="chevron-forward" size={16} color={palette.muted.foreground} />
+									<Ionicons name="chevron-forward" size={18} color={palette.muted.foreground} />
 								</View>
 
 								{/* PR badge */}
 								{pr && (
 									<View
-										className="flex-row items-center gap-2 rounded-xl px-3 py-2 mb-3 ml-11"
-										style={{ backgroundColor: `${palette.primary.DEFAULT}15` }}
+										className="flex-row items-center gap-2 px-3 py-2 mb-3 ml-11"
+										style={{ backgroundColor: palette.accent.muted, borderRadius: radius.md }}
 									>
-										<Text className="text-xs font-bold" style={{ color: palette.primary.DEFAULT }}>
+										<Text className="text-xs font-bold" style={{ color: palette.accent.DEFAULT }}>
 											{displayWeight(pr.newWeight)} {weightUnit}
 										</Text>
 										<Text className="text-xs" style={{ color: palette.muted.foreground }}>
@@ -273,7 +275,7 @@ export default function WorkoutDetailScreen() {
 			>
 				{historyLoading ? (
 					<View className="items-center py-8">
-						<ActivityIndicator size="small" color={palette.primary.DEFAULT} />
+						<ActivityIndicator size="small" color={palette.accent.DEFAULT} />
 					</View>
 				) : (
 					<View className="gap-5">
@@ -325,10 +327,10 @@ export default function WorkoutDetailScreen() {
 function StatPill({ label, value }: { label: string; value: string }) {
 	return (
 		<View
-			className="flex-1 items-center rounded-2xl py-3"
-			style={{ backgroundColor: palette.card.DEFAULT }}
+			className="flex-1 items-center py-3"
+			style={{ backgroundColor: palette.card.DEFAULT, borderRadius: radius.lg }}
 		>
-			<Text className="font-bold text-foreground" style={{ fontSize: 18 }}>
+			<Text className="font-bold text-foreground" style={{ fontSize: typography.statMd.fontSize }}>
 				{value}
 			</Text>
 			<Text className="text-xs mt-0.5" style={{ color: palette.muted.foreground }}>

@@ -52,7 +52,7 @@ export function LogWeightDrawer({ visible, onClose, lastWeight }: Props) {
 					step={0.1}
 					endAdornment={weightUnit}
 				/>
-				<Button label={t("profile.save")} onPress={handleSave} loading={saving} fullWidth />
+				<Button variant="glow" label={t("profile.save")} onPress={handleSave} loading={saving} fullWidth />
 			</View>
 		</BottomDrawer>
 	);

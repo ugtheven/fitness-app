@@ -13,6 +13,7 @@ import { EXERCISE_VARIANTS_BY_ID } from "../../lib/exerciseVariants";
 import type { Equipment } from "../../lib/exerciseTypes";
 import { useSessionTimer } from "../../lib/useSessionTimer";
 import { palette } from "../../lib/palette";
+import { borders, radius } from "../../lib/tokens";
 
 function equipmentIcon(equipment: Equipment): keyof typeof Ionicons.glyphMap {
 	switch (equipment) {
@@ -113,12 +114,12 @@ export default function WorkoutScreen() {
 					<View
 						className="px-3 py-1.5 rounded-xl"
 						style={{
-							backgroundColor: `${palette.primary.DEFAULT}20`,
+							backgroundColor: palette.accent.muted,
 							borderWidth: 1,
-							borderColor: `${palette.primary.DEFAULT}40`,
+							borderColor: palette.accent.border,
 						}}
 					>
-						<Text className="text-sm font-bold tabular-nums" style={{ color: palette.primary.DEFAULT }}>
+						<Text className="text-sm font-bold tabular-nums" style={{ color: palette.accent.DEFAULT }}>
 							{timerLabel}
 						</Text>
 					</View>
@@ -129,7 +130,7 @@ export default function WorkoutScreen() {
 			<ScrollView
 				ref={scrollViewRef}
 				className="flex-1 px-6"
-				contentContainerStyle={{ gap: 10, paddingTop: 4, paddingBottom: 24 }}
+				contentContainerStyle={{ gap: 12, paddingTop: 4, paddingBottom: 24 }}
 			>
 				<Text className="text-xs font-medium" style={{ color: palette.muted.foreground }}>
 					{t("workout.exerciseProgress", { done: doneCount, count: totalCount })}
@@ -150,28 +151,29 @@ export default function WorkoutScreen() {
 							className="active:opacity-70"
 						>
 							<View
-								className="flex-row items-center gap-3 rounded-2xl px-4 py-4"
+								className="flex-row items-center gap-3 px-5 py-4"
 								style={{
 									backgroundColor: palette.card.DEFAULT,
+									borderRadius: radius.lg,
 									opacity: isDone ? 0.45 : 1,
-									borderWidth: isCurrent ? 1.5 : 0,
-									borderColor: palette.primary.DEFAULT,
+									borderWidth: isCurrent ? borders.emphasis : 0,
+									borderColor: palette.accent.DEFAULT,
 								}}
 							>
 								<View
 									className="w-9 h-9 rounded-full items-center justify-center"
 									style={{
 										backgroundColor: isDone
-											? `${palette.primary.DEFAULT}26`
+											? palette.accent.muted
 											: isCurrent
-												? `${palette.primary.DEFAULT}20`
+												? palette.accent.muted
 												: palette.muted.DEFAULT,
 									}}
 								>
 									<Ionicons
 										name={isDone ? "checkmark" : icon}
 										size={18}
-										color={isDone || isCurrent ? palette.primary.DEFAULT : palette.muted.foreground}
+										color={isDone || isCurrent ? palette.accent.DEFAULT : palette.muted.foreground}
 									/>
 								</View>
 								<View className="flex-1">
@@ -186,7 +188,7 @@ export default function WorkoutScreen() {
 									<Ionicons
 										name="chevron-forward"
 										size={18}
-										color={isCurrent ? palette.primary.DEFAULT : palette.muted.foreground}
+										color={isCurrent ? palette.accent.DEFAULT : palette.muted.foreground}
 									/>
 								)}
 							</View>

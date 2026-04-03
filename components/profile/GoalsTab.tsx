@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { palette } from "../../lib/palette";
+import { borders, radius } from "../../lib/tokens";
 import { useUnits } from "../../lib/units";
 import {
 	getActiveGoalsQuery,
@@ -76,9 +77,10 @@ export function GoalsTab() {
 					</Text>
 					<View className="mt-4">
 						<Button
+							variant="glow"
 							label={t("profile.newGoal")}
 							onPress={() => setShowDrawer(true)}
-							startIcon={<Ionicons name="add" size={20} color={palette.primary.foreground} />}
+							startIcon={<Ionicons name="add" size={20} />}
 						/>
 					</View>
 				</View>
@@ -111,11 +113,12 @@ export function GoalsTab() {
 					return (
 						<View
 							key={goal.id}
-							className="rounded-2xl px-4 py-4"
+							className="px-5 py-4"
 							style={{
 								backgroundColor: palette.card.DEFAULT,
-								borderWidth: reached ? 1.5 : 0,
-								borderColor: reached ? palette.primary.DEFAULT : "transparent",
+								borderRadius: radius.lg,
+								borderWidth: reached ? borders.emphasis : 0,
+								borderColor: reached ? palette.accent.DEFAULT : "transparent",
 							}}
 						>
 							{/* Header: type + days */}
@@ -124,16 +127,16 @@ export function GoalsTab() {
 									<Ionicons
 										name={type === "weight" ? "scale-outline" : "body-outline"}
 										size={18}
-										color={reached ? palette.primary.DEFAULT : palette.foreground}
+										color={reached ? palette.accent.DEFAULT : palette.foreground}
 									/>
 									<Text className="text-base font-semibold text-foreground">
 										{t(`profile.${type === "weight" ? "weight" : type}`)}
 									</Text>
 								</View>
 								{reached ? (
-									<View className="flex-row items-center gap-1 px-2 py-1 rounded-lg" style={{ backgroundColor: `${palette.primary.DEFAULT}20` }}>
-										<Ionicons name="checkmark-circle" size={14} color={palette.primary.DEFAULT} />
-										<Text className="text-xs font-semibold" style={{ color: palette.primary.DEFAULT }}>
+									<View className="flex-row items-center gap-1 px-2 py-1" style={{ backgroundColor: palette.accent.muted, borderRadius: radius.md }}>
+										<Ionicons name="checkmark-circle" size={14} color={palette.accent.DEFAULT} />
+										<Text className="text-xs font-semibold" style={{ color: palette.accent.DEFAULT }}>
 											{t("profile.goalReached")}
 										</Text>
 									</View>
@@ -142,11 +145,11 @@ export function GoalsTab() {
 										<Ionicons
 											name="time-outline"
 											size={14}
-											color={days < 0 ? "#EF4444" : palette.muted.foreground}
+											color={days < 0 ? palette.destructive.DEFAULT : palette.muted.foreground}
 										/>
 										<Text
 											className="text-xs"
-											style={{ color: days < 0 ? "#EF4444" : palette.muted.foreground }}
+											style={{ color: days < 0 ? palette.destructive.DEFAULT : palette.muted.foreground }}
 										>
 											{days < 0 ? t("profile.expired") : t("profile.daysRemaining", { count: days })}
 										</Text>
@@ -161,7 +164,7 @@ export function GoalsTab() {
 								</Text>
 								<Text className="text-sm" style={{ color: palette.muted.foreground }}>{unit}</Text>
 								<Ionicons name="arrow-forward" size={14} color={palette.muted.foreground} style={{ marginHorizontal: 4 }} />
-								<Text className="text-2xl font-bold" style={{ color: palette.primary.DEFAULT }}>
+								<Text className="text-2xl font-bold" style={{ color: palette.accent.DEFAULT }}>
 									{displayValue(goal.targetValue)}
 								</Text>
 								<Text className="text-sm" style={{ color: palette.muted.foreground }}>{unit}</Text>
@@ -174,7 +177,7 @@ export function GoalsTab() {
 									style={{
 										height: 6,
 										width: `${Math.round(progress * 100)}%`,
-										backgroundColor: reached ? palette.primary.DEFAULT : palette.primary.DEFAULT,
+										backgroundColor: reached ? palette.accent.DEFAULT : palette.accent.DEFAULT,
 									}}
 								/>
 							</View>
@@ -183,10 +186,10 @@ export function GoalsTab() {
 							{reached ? (
 								<Pressable
 									onPress={() => updateGoalStatus(goal.id, "achieved")}
-									className="items-center py-2 rounded-xl active:opacity-70"
-									style={{ backgroundColor: `${palette.primary.DEFAULT}20` }}
+									className="items-center py-2 active:opacity-70"
+									style={{ backgroundColor: palette.accent.muted, borderRadius: radius.md }}
 								>
-									<Text className="text-sm font-semibold" style={{ color: palette.primary.DEFAULT }}>
+									<Text className="text-sm font-semibold" style={{ color: palette.accent.DEFAULT }}>
 										{t("profile.confirmAchieved")}
 									</Text>
 								</Pressable>
@@ -206,10 +209,11 @@ export function GoalsTab() {
 
 				{/* New Goal button */}
 				<Button
+					variant="glow"
 					label={t("profile.newGoal")}
 					onPress={() => setShowDrawer(true)}
 					fullWidth
-					startIcon={<Ionicons name="add" size={20} color={palette.primary.foreground} />}
+					startIcon={<Ionicons name="add" size={20} />}
 				/>
 			</ScrollView>
 

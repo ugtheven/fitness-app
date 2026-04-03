@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
 import type { MuscleGroup } from "../lib/exerciseTypes";
 import { palette } from "../lib/palette";
+import { radius, shadows } from "../lib/tokens";
 import { ChipList } from "./ChipList";
 import { IconButton } from "./IconButton";
 
@@ -21,12 +22,8 @@ export function SessionCard({ name, exerciseCount, muscles, isDragging, onPress,
 	return (
 		<Pressable onPress={onPress} className="active:opacity-70">
 			<View
-				className="flex-row items-center gap-3 rounded-2xl bg-card px-5 py-4"
-				style={
-					isDragging
-						? { shadowColor: "#000", shadowOpacity: 0.2, shadowRadius: 10, elevation: 10 }
-						: undefined
-				}
+				className="flex-row items-center gap-3 bg-card px-5 py-4"
+				style={[{ borderRadius: radius.lg }, isDragging ? shadows.drag : undefined]}
 			>
 				<Ionicons name="reorder-three-outline" size={22} color={palette.muted.foreground} />
 				<View className="flex-1">
@@ -44,7 +41,7 @@ export function SessionCard({ name, exerciseCount, muscles, isDragging, onPress,
 					<IconButton
 						name="trash-outline"
 						size={18}
-						color="#ef4444"
+						color={palette.destructive.DEFAULT}
 						onPress={onDelete}
 						accessibilityLabel={t("common.delete")}
 					/>

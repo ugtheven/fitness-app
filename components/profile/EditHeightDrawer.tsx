@@ -50,7 +50,7 @@ export function EditHeightDrawer({ visible, onClose, currentHeight }: Props) {
 					step={heightStep}
 					endAdornment={lengthUnit}
 				/>
-				<Button label={t("profile.save")} onPress={handleSave} loading={saving} fullWidth />
+				<Button variant="glow" label={t("profile.save")} onPress={handleSave} loading={saving} fullWidth />
 			</View>
 		</BottomDrawer>
 	);

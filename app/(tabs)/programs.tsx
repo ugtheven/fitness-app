@@ -14,6 +14,7 @@ import { TextField } from "../../components/TextField";
 import { db } from "../../db";
 import { programs, sessions, sessionExercises } from "../../db/schema";
 import { palette } from "../../lib/palette";
+import { borders, spacing } from "../../lib/tokens";
 
 const MAX_CHIPS = 3;
 
@@ -114,8 +115,9 @@ export default function ProgramsScreen() {
 							</Pressable>
 						)}
 						<Button
+							variant="glow"
 							label={t("common.program")}
-							startIcon={<Ionicons name="add" size={20} color="white" />}
+							startIcon={<Ionicons name="add" size={20} />}
 							onPress={() => setNewDrawerOpen(true)}
 						/>
 					</View>
@@ -125,7 +127,7 @@ export default function ProgramsScreen() {
 					<EmptyState message={t("programs.empty")} hint={t("programs.emptyHint")} />
 				) : (
 					<ScrollView
-						contentContainerStyle={{ paddingTop: 20, paddingBottom: 100, gap: 12 }}
+						contentContainerStyle={{ paddingTop: 20, paddingBottom: spacing.navbarClearance, gap: 12 }}
 						showsVerticalScrollIndicator={false}
 					>
 						{/* Active program */}
@@ -136,19 +138,19 @@ export default function ProgramsScreen() {
 							>
 										<View
 											className="rounded-2xl bg-card p-5"
-											style={{ borderWidth: 1.5, borderColor: palette.primary.DEFAULT }}
+											style={{ borderWidth: borders.emphasis, borderColor: palette.accent.DEFAULT }}
 										>
 											{/* Card header */}
 											<View className="mb-4 flex-row items-center gap-3">
 												<View
 													className="rounded-xl p-2"
-													style={{ backgroundColor: `${palette.primary.DEFAULT}26` }}
+													style={{ backgroundColor: palette.accent.muted }}
 												>
-													<Ionicons name="flash" size={18} color={palette.primary.DEFAULT} />
+													<Ionicons name="flash" size={18} color={palette.accent.DEFAULT} />
 												</View>
 												<Text
 													className="flex-1 text-xs font-bold tracking-widest"
-													style={{ color: palette.primary.DEFAULT }}
+													style={{ color: palette.accent.DEFAULT }}
 												>
 													{t("programs.activeProgram").toUpperCase()}
 												</Text>
@@ -169,7 +171,7 @@ export default function ProgramsScreen() {
 												<View className="flex-row items-center gap-1.5">
 													<View
 														className="h-2 w-2 rounded-full"
-														style={{ backgroundColor: palette.primary.DEFAULT }}
+														style={{ backgroundColor: palette.accent.DEFAULT }}
 													/>
 													<Text className="text-sm font-medium text-foreground">
 														{t("programs.sessionCount", { count: activeSessions.length })}
@@ -178,7 +180,7 @@ export default function ProgramsScreen() {
 												<View className="flex-row items-center gap-1.5">
 													<View
 														className="h-2 w-2 rounded-full"
-														style={{ backgroundColor: palette.primary.DEFAULT }}
+														style={{ backgroundColor: palette.accent.DEFAULT }}
 													/>
 													<Text className="text-sm font-medium text-foreground">
 														{t("programs.exerciseCount", { count: activeExerciseCount })}
@@ -196,7 +198,7 @@ export default function ProgramsScreen() {
 														>
 															<Text
 																className="mr-1 text-xs font-bold"
-																style={{ color: palette.primary.DEFAULT }}
+																style={{ color: palette.accent.DEFAULT }}
 															>
 																D{i + 1}
 															</Text>
@@ -255,7 +257,7 @@ export default function ProgramsScreen() {
 						returnKeyType="done"
 						onSubmitEditing={handleCreate}
 					/>
-					<Button fullWidth label={t("common.create")} onPress={handleCreate} />
+					<Button variant="glow" fullWidth label={t("common.create")} onPress={handleCreate} />
 				</View>
 			</BottomDrawer>
 

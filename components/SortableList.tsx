@@ -9,6 +9,7 @@ import Animated, {
 	withSpring,
 	withTiming,
 } from "react-native-reanimated";
+import { palette } from "../lib/palette";
 
 export type RenderItemInfo<T> = {
 	item: T;
@@ -86,7 +87,7 @@ function SortableItem({
 			return {
 				transform: [{ translateY: dragY.value }, { scale: withSpring(1.03, { damping: 15, stiffness: 300 }) }],
 				zIndex: 100,
-				shadowColor: "#000",
+				shadowColor: palette.shadow,
 				shadowOpacity: withSpring(0.2, { damping: 15, stiffness: 300 }),
 				shadowRadius: 12,
 				elevation: withSpring(12, { damping: 15, stiffness: 300 }),

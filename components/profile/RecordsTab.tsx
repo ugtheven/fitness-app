@@ -7,6 +7,8 @@ import { EXERCISE_BASES_BY_ID } from "../../lib/exerciseBases";
 import type { Equipment } from "../../lib/exerciseTypes";
 import { EXERCISE_VARIANTS_BY_ID } from "../../lib/exerciseVariants";
 import { palette } from "../../lib/palette";
+import { EmptyState } from "../EmptyState";
+import { radius } from "../../lib/tokens";
 import { getAllExercisePRsQuery } from "../../lib/profileQueries";
 import { useUnits } from "../../lib/units";
 
@@ -57,11 +59,7 @@ export function RecordsTab() {
 	}, [prs]);
 
 	if (prs.length === 0) {
-		return (
-			<View className="flex-1 items-center justify-center">
-				<Text style={{ color: palette.muted.foreground }}>{t("profile.noRecords")}</Text>
-			</View>
-		);
+		return <EmptyState message={t("profile.noRecords")} />;
 	}
 
 	return (
@@ -83,8 +81,8 @@ export function RecordsTab() {
 					{exercises.map((ex) => (
 						<View
 							key={ex.exerciseVariantId}
-							className="flex-row items-center gap-3 rounded-2xl px-4 py-3"
-							style={{ backgroundColor: palette.card.DEFAULT }}
+							className="flex-row items-center gap-3 px-4 py-3"
+							style={{ backgroundColor: palette.card.DEFAULT, borderRadius: radius.lg }}
 						>
 							<View
 								className="w-9 h-9 rounded-full items-center justify-center"
@@ -108,8 +106,8 @@ export function RecordsTab() {
 									<Text className="text-xs ml-1" style={{ color: palette.muted.foreground }}>{weightUnit}</Text>
 								</View>
 								<View className="flex-row items-center gap-1 mt-0.5">
-									<Ionicons name="flash" size={10} color={palette.primary.DEFAULT} />
-									<Text className="text-xs font-semibold" style={{ color: palette.primary.DEFAULT }}>
+									<Ionicons name="flash" size={10} color={palette.accent.DEFAULT} />
+									<Text className="text-xs font-semibold" style={{ color: palette.accent.DEFAULT }}>
 										PR
 									</Text>
 								</View>

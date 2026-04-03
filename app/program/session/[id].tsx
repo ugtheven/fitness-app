@@ -21,6 +21,7 @@ import { EXERCISE_VARIANTS, EXERCISE_VARIANTS_BY_ID } from "../../../lib/exercis
 import { EXERCISE_BASES_BY_ID } from "../../../lib/exerciseBases";
 import type { Equipment, ExerciseVariant } from "../../../lib/exerciseTypes";
 import { palette } from "../../../lib/palette";
+import { radius } from "../../../lib/tokens";
 import { useUnits } from "../../../lib/units";
 
 type ExerciseRow = typeof sessionExercises.$inferSelect;
@@ -200,8 +201,9 @@ export default function SessionScreen() {
 				onBack={() => router.back()}
 				action={
 					<Button
+						variant="glow"
 						label={t("common.exercise")}
-						startIcon={<Ionicons name="add" size={20} color="white" />}
+						startIcon={<Ionicons name="add" size={20} />}
 						onPress={openDrawer}
 					/>
 				}
@@ -299,10 +301,10 @@ export default function SessionScreen() {
 											onPress={() => pickExercise(variant)}
 											className="active:opacity-70"
 										>
-											<View className="flex-row items-center rounded-xl bg-background px-4 py-3">
+											<View className="flex-row items-center bg-background px-4 py-3" style={{ borderRadius: radius.md }}>
 												<View className="flex-1 gap-1.5">
 													<View className="flex-row items-center gap-2">
-														<Text className="text-base font-medium text-foreground">
+														<Text className="text-base font-semibold text-foreground">
 															{t(`exercises.names.${variant.id}`)}
 														</Text>
 														<View className="flex-row items-center gap-1 rounded-full bg-muted px-2 py-0.5">
@@ -316,7 +318,7 @@ export default function SessionScreen() {
 														))}
 													</View>
 												</View>
-												<Ionicons name="chevron-forward" size={16} color={palette.muted.foreground} />
+												<Ionicons name="chevron-forward" size={18} color={palette.muted.foreground} />
 											</View>
 										</Pressable>
 									);
@@ -385,6 +387,7 @@ export default function SessionScreen() {
 							endAdornment="s"
 						/>
 						<Button
+							variant="glow"
 							fullWidth
 							label={editingId ? t("common.save") : t("exercises.addExercise")}
 							onPress={editingId ? handleUpdate : handleAdd}

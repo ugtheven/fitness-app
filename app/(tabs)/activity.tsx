@@ -7,6 +7,7 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Calendar } from "../../components/Calendar";
 import { palette } from "../../lib/palette";
+import { radius, spacing } from "../../lib/tokens";
 import { useUnits } from "../../lib/units";
 import { getSessionPRs, getWorkoutsByMonthQuery } from "../../lib/workoutHistory";
 
@@ -136,7 +137,7 @@ export default function ActivityScreen() {
 		<SafeAreaView className="flex-1 bg-background" edges={["top"]}>
 			<ScrollView
 				className="flex-1"
-				contentContainerStyle={{ paddingBottom: 100 }}
+				contentContainerStyle={{ paddingBottom: spacing.navbarClearance }}
 				showsVerticalScrollIndicator={false}
 			>
 				{/* Header */}
@@ -149,7 +150,7 @@ export default function ActivityScreen() {
 
 				{/* Stat cards */}
 				<View className="flex-row px-6 gap-3 mb-5">
-					<View className="flex-1 rounded-2xl px-4 py-3" style={{ backgroundColor: palette.card.DEFAULT }}>
+					<View className="flex-1 px-4 py-3" style={{ backgroundColor: palette.card.DEFAULT, borderRadius: radius.lg }}>
 						<Text className="text-xs font-medium mb-1" style={{ color: palette.muted.foreground }}>
 							{t("activity.statSessions")}
 						</Text>
@@ -157,7 +158,7 @@ export default function ActivityScreen() {
 							{monthStats.sessions}
 						</Text>
 					</View>
-					<View className="flex-1 rounded-2xl px-4 py-3" style={{ backgroundColor: palette.card.DEFAULT }}>
+					<View className="flex-1 px-4 py-3" style={{ backgroundColor: palette.card.DEFAULT, borderRadius: radius.lg }}>
 						<Text className="text-xs font-medium mb-1" style={{ color: palette.muted.foreground }}>
 							{t("activity.statVolume")}
 						</Text>
@@ -168,7 +169,7 @@ export default function ActivityScreen() {
 							<Text className="text-sm ml-1" style={{ color: palette.muted.foreground }}>t</Text>
 						</View>
 					</View>
-					<View className="flex-1 rounded-2xl px-4 py-3" style={{ backgroundColor: palette.card.DEFAULT }}>
+					<View className="flex-1 px-4 py-3" style={{ backgroundColor: palette.card.DEFAULT, borderRadius: radius.lg }}>
 						<Text className="text-xs font-medium mb-1" style={{ color: palette.muted.foreground }}>
 							{t("activity.statTime")}
 						</Text>
@@ -183,9 +184,10 @@ export default function ActivityScreen() {
 
 				{/* Calendar card */}
 				<View
-					className="mx-6 rounded-2xl mb-5"
+					className="mx-6 mb-5"
 					style={{
 						backgroundColor: palette.card.DEFAULT,
+						borderRadius: radius.lg,
 						borderWidth: 1,
 						borderColor: palette.border,
 					}}
@@ -222,8 +224,8 @@ export default function ActivityScreen() {
 								className="active:opacity-70"
 							>
 								<View
-									className="rounded-2xl px-4 py-4"
-									style={{ backgroundColor: palette.card.DEFAULT }}
+									className="px-5 py-4"
+									style={{ backgroundColor: palette.card.DEFAULT, borderRadius: radius.lg }}
 								>
 									<View className="flex-row items-center justify-between mb-1.5">
 										<Text className="text-base font-semibold text-foreground flex-1 mr-3" numberOfLines={1}>
@@ -249,8 +251,8 @@ export default function ActivityScreen() {
 											<>
 												<Text className="text-xs" style={{ color: palette.muted.foreground }}>·</Text>
 												<View className="flex-row items-center gap-1">
-													<Ionicons name="flash" size={12} color={palette.primary.DEFAULT} />
-													<Text className="text-xs font-semibold" style={{ color: palette.primary.DEFAULT }}>
+													<Ionicons name="flash" size={12} color={palette.accent.DEFAULT} />
+													<Text className="text-xs font-semibold" style={{ color: palette.accent.DEFAULT }}>
 														{prCounts.get(workout.id)} PR
 													</Text>
 												</View>

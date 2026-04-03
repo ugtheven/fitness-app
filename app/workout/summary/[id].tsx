@@ -11,6 +11,7 @@ import { db } from "../../../db";
 import { sessions, workoutExercises, workoutSessions, workoutSets } from "../../../db/schema";
 import { EXERCISE_VARIANTS_BY_ID } from "../../../lib/exerciseVariants";
 import { palette } from "../../../lib/palette";
+import { radius, typography } from "../../../lib/tokens";
 import { useUnits } from "../../../lib/units";
 import { getSessionPRs } from "../../../lib/workoutHistory";
 
@@ -91,9 +92,9 @@ export default function WorkoutSummaryScreen() {
 				{/* Completion icon */}
 				<View
 					className="w-24 h-24 rounded-full items-center justify-center"
-					style={{ backgroundColor: `${palette.primary.DEFAULT}20` }}
+					style={{ backgroundColor: palette.accent.muted }}
 				>
-					<Ionicons name="checkmark" size={52} color={palette.primary.DEFAULT} />
+					<Ionicons name="checkmark" size={52} color={palette.accent.DEFAULT} />
 				</View>
 
 				{/* Title & session name */}
@@ -113,7 +114,7 @@ export default function WorkoutSummaryScreen() {
 					<Text className="text-xs font-semibold uppercase tracking-widest" style={{ color: palette.muted.foreground }}>
 						{t("workout.duration")}
 					</Text>
-					<Text className="font-bold tabular-nums" style={{ fontSize: 48, color: palette.foreground, lineHeight: 56 }}>
+					<Text className="font-bold tabular-nums" style={{ ...typography.displaySm, color: palette.foreground }}>
 						{durationLabel}
 					</Text>
 				</View>
@@ -127,12 +128,12 @@ export default function WorkoutSummaryScreen() {
 
 				{/* PRs beaten */}
 				{prsLoading ? (
-					<ActivityIndicator size="small" color={palette.primary.DEFAULT} />
+					<ActivityIndicator size="small" color={palette.accent.DEFAULT} />
 				) : prs.length === 0 ? null : (
 					<View className="w-full gap-2">
 						<View className="flex-row items-center gap-2 justify-center">
-							<Ionicons name="flash" size={16} color={palette.primary.DEFAULT} />
-							<Text className="text-sm font-bold" style={{ color: palette.primary.DEFAULT }}>
+							<Ionicons name="flash" size={16} color={palette.accent.DEFAULT} />
+							<Text className="text-sm font-bold" style={{ color: palette.accent.DEFAULT }}>
 								{t("pr.prsBeaten")}
 							</Text>
 						</View>
@@ -142,14 +143,14 @@ export default function WorkoutSummaryScreen() {
 							return (
 								<View
 									key={pr.exerciseVariantId}
-									className="flex-row items-center justify-between rounded-2xl px-4 py-3"
-									style={{ backgroundColor: `${palette.primary.DEFAULT}15` }}
+									className="flex-row items-center justify-between px-4 py-3"
+									style={{ backgroundColor: palette.accent.muted, borderRadius: radius.lg }}
 								>
 									<Text className="text-sm font-semibold text-foreground flex-1 mr-3" numberOfLines={1}>
 										{name}
 									</Text>
 									<View className="items-end">
-										<Text className="text-sm font-bold" style={{ color: palette.primary.DEFAULT }}>
+										<Text className="text-sm font-bold" style={{ color: palette.accent.DEFAULT }}>
 											{displayWeight(pr.newWeight)} {weightUnit}
 										</Text>
 										<Text className="text-xs" style={{ color: palette.muted.foreground }}>
@@ -168,6 +169,7 @@ export default function WorkoutSummaryScreen() {
 			{/* CTA */}
 			<View className="px-6 pb-6">
 				<Button
+					variant="glow"
 					fullWidth
 					label={t("workout.backToHome")}
 					onPress={() => router.replace("/(tabs)")}
@@ -180,12 +182,12 @@ export default function WorkoutSummaryScreen() {
 function StatCard({ label, value, muted }: { label: string; value: string; muted?: boolean }) {
 	return (
 		<View
-			className="flex-1 items-center justify-center rounded-2xl py-4"
-			style={{ backgroundColor: palette.card.DEFAULT }}
+			className="flex-1 items-center justify-center py-4"
+			style={{ backgroundColor: palette.card.DEFAULT, borderRadius: radius.lg }}
 		>
 			<Text
 				className="font-bold"
-				style={{ fontSize: 28, color: muted ? palette.muted.foreground : palette.foreground, lineHeight: 34 }}
+				style={{ ...typography.statLg, color: muted ? palette.muted.foreground : palette.foreground }}
 			>
 				{value}
 			</Text>

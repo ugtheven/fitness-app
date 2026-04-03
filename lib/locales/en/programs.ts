@@ -54,9 +54,6 @@ workout: {
 	undo: "Undo",
 },
 home: {
-	inProgressTitle: "Workout in progress",
-	inProgressMessage: "You have a workout in progress. Starting a new session will discard it.",
-	startNew: "Start new",
 	emptySessionTitle: "No exercises",
 	emptySessionMessage: "Add exercises to this session before starting.",
 	emptyTitle: "No active program",

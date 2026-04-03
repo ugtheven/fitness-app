@@ -54,9 +54,6 @@ workout: {
 	undo: "Annuler",
 },
 home: {
-	inProgressTitle: "Séance en cours",
-	inProgressMessage: "Tu as une séance en cours. En lancer une nouvelle supprimera la précédente.",
-	startNew: "Nouvelle séance",
 	emptySessionTitle: "Aucun exercice",
 	emptySessionMessage: "Ajoute des exercices à cette séance avant de la lancer.",
 	emptyTitle: "Aucun programme actif",

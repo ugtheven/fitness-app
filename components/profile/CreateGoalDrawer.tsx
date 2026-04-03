@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
 import { palette } from "../../lib/palette";
+import { radius, spacing } from "../../lib/tokens";
 import { getLatestMeasurementsQuery, getLatestWeightQuery, insertGoal } from "../../lib/profileQueries";
 import { useUnits } from "../../lib/units";
 import { BottomDrawer } from "../BottomDrawer";
@@ -116,9 +117,10 @@ export function CreateGoalDrawer({ visible, onClose }: Props) {
 								<Pressable
 									key={cat}
 									onPress={() => setCategory(cat)}
-									className="flex-1 items-center py-3 rounded-xl"
+									className="flex-1 items-center py-3"
 									style={{
 										backgroundColor: isActive ? palette.primary.DEFAULT : palette.muted.DEFAULT,
+										borderRadius: radius.md,
 									}}
 								>
 									<Text
@@ -144,9 +146,10 @@ export function CreateGoalDrawer({ visible, onClose }: Props) {
 									<Pressable
 										key={key}
 										onPress={() => setMeasurementKey(key)}
-										className="px-3 py-2 rounded-xl"
+										className="px-3 py-2"
 										style={{
 											backgroundColor: isActive ? palette.primary.DEFAULT : palette.muted.DEFAULT,
+											borderRadius: radius.md,
 										}}
 									>
 										<Text
@@ -164,8 +167,8 @@ export function CreateGoalDrawer({ visible, onClose }: Props) {
 
 				{/* Current value display */}
 				<View
-					className="flex-row items-center justify-between rounded-2xl px-4 py-3"
-					style={{ backgroundColor: palette.muted.DEFAULT }}
+					className="flex-row items-center justify-between px-4 py-3"
+					style={{ backgroundColor: palette.muted.DEFAULT, borderRadius: radius.lg }}
 				>
 					<Text className="text-sm" style={{ color: palette.muted.foreground }}>
 						{t("profile.current")} {t(`profile.${goalType === "weight" ? "weight" : goalType}`)}
@@ -191,8 +194,8 @@ export function CreateGoalDrawer({ visible, onClose }: Props) {
 					<Text className="text-sm font-medium text-foreground">{t("profile.deadline")}</Text>
 					<Pressable
 						onPress={() => setShowPicker(true)}
-						className="flex-row items-center rounded-2xl border border-border bg-background px-4"
-						style={{ height: 52 }}
+						className="flex-row items-center border border-border bg-background px-4"
+						style={{ height: spacing.inputHeight, borderRadius: radius.lg }}
 					>
 						<Text
 							className="flex-1 text-base"
@@ -209,7 +212,7 @@ export function CreateGoalDrawer({ visible, onClose }: Props) {
 							display="inline"
 							minimumDate={new Date()}
 							themeVariant="dark"
-							accentColor={palette.primary.DEFAULT}
+							accentColor={palette.accent.DEFAULT}
 							onChange={(_event, selected) => {
 								if (selected) setDeadlineDate(selected);
 								setShowPicker(false);
@@ -230,6 +233,7 @@ export function CreateGoalDrawer({ visible, onClose }: Props) {
 
 				{/* Create button */}
 				<Button
+					variant="glow"
 					label={t("profile.createGoal")}
 					onPress={handleCreate}
 					loading={saving}
