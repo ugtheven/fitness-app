@@ -8,7 +8,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { BottomDrawer } from "../../components/BottomDrawer";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { db } from "../../db";
-import { sessions, workoutSessions } from "../../db/schema";
+import { workoutSessions } from "../../db/schema";
 import type { Equipment } from "../../lib/exerciseTypes";
 import { EXERCISE_VARIANTS_BY_ID } from "../../lib/exerciseVariants";
 import { palette } from "../../lib/palette";
@@ -124,15 +124,14 @@ export default function WorkoutDetailScreen() {
 	useEffect(() => {
 		async function load() {
 			const [sessionData] = await db
-				.select({ workoutSession: workoutSessions, session: sessions })
+				.select()
 				.from(workoutSessions)
-				.leftJoin(sessions, eq(workoutSessions.sessionId, sessions.id))
 				.where(eq(workoutSessions.id, workoutSessionId));
 
 			if (sessionData) {
-				setSessionName(sessionData.session?.name ?? null);
-				setStartedAt(sessionData.workoutSession.startedAt);
-				setEndedAt(sessionData.workoutSession.endedAt);
+				setSessionName(sessionData.sessionName);
+				setStartedAt(sessionData.startedAt);
+				setEndedAt(sessionData.endedAt);
 			}
 
 			const [detail, prs] = await Promise.all([

@@ -2,7 +2,7 @@ export default {
 	programs: {
 		title: "Programmes",
 		empty: "Aucun programme.",
-		emptyHint: 'Appuyez sur "Programme" pour en créer un.',
+		emptyHint: 'Appuie sur "Programme" pour en créer un.',
 		newProgram: "Nouveau programme",
 		namePlaceholder: "Nom du programme",
 		sessionCount_one: "{{count}} séance",
@@ -22,7 +22,7 @@ export default {
 		newSession: "Nouvelle séance",
 		namePlaceholder: "Nom de la séance",
 		empty: "Aucune séance.",
-		emptyHint: 'Appuyez sur "Séance" pour en ajouter une.',
+		emptyHint: 'Appuie sur "Séance" pour en ajouter une.',
 		exerciseCount_one: "{{count}} exercice",
 		exerciseCount_other: "{{count}} exercices",
 		deleteTitle: "Supprimer la séance",
@@ -66,6 +66,9 @@ export default {
 		emptyHint: "Crée un programme pour commencer à t'entraîner.",
 		createProgram: "Créer un programme",
 		nextSession: "Suivante",
+		steps: "Pas",
+		stepsGoal5k: "5 000",
+		stepsGoal10k: "10 000",
 	},
 	pr: {
 		newRecord: "Nouveau record ! {{weight}} {{unit}}",

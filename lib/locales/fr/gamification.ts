@@ -5,6 +5,7 @@ export default {
 		xpProgress: "{{current}} / {{total}} XP",
 		earned: "+{{amount}} XP",
 		levelUp: "Niveau supérieur !",
+		levelUpToast: "Tu as atteint le niveau {{level}} !",
 	},
 	achievements: {
 		title: "Succès",
@@ -19,8 +20,8 @@ export default {
 		workouts_50_desc: "Terminer 50 séances",
 		workouts_100: "Centurion",
 		workouts_100_desc: "Terminer 100 séances",
-		first_pr: "Record battu",
-		first_pr_desc: "Battre son premier record personnel",
+		first_pr: "Premier poids",
+		first_pr_desc: "Enregistrer son premier poids",
 		prs_10: "Chasseur de PR",
 		prs_10_desc: "Battre 10 records personnels",
 		hydration_streak_3: "Hydraté",

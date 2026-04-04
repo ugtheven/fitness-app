@@ -10,6 +10,7 @@ import { BottomDrawer } from "../../components/BottomDrawer";
 import { Button } from "../../components/Button";
 import { HomeHeader } from "../../components/HomeHeader";
 import { HydrationWidget } from "../../components/HydrationWidget";
+import { StepsWidget } from "../../components/StepsWidget";
 import { db } from "../../db";
 import {
 	programs,
@@ -20,6 +21,7 @@ import {
 } from "../../db/schema";
 import { palette } from "../../lib/palette";
 import { borders, radius, spacing } from "../../lib/tokens";
+import { XP_REWARDS } from "../../lib/xp";
 
 export default function HomeScreen() {
 	const { t } = useTranslation();
@@ -93,11 +95,19 @@ export default function HomeScreen() {
 				const nowDate = new Date();
 				const now = nowDate.toISOString();
 				const localDate = `${nowDate.getFullYear()}-${String(nowDate.getMonth() + 1).padStart(2, "0")}-${String(nowDate.getDate()).padStart(2, "0")}`;
+				// Fetch session name for snapshot
+				const [sessionRow] = await tx
+					.select({ name: sessions.name })
+					.from(sessions)
+					.where(eq(sessions.id, sessionId));
+
 				const [workoutSession] = await tx
 					.insert(workoutSessions)
 					.values({
 						sessionId,
 						programId: activeProgram?.id ?? null,
+						sessionName: sessionRow?.name ?? null,
+						programName: activeProgram?.name ?? null,
 						startedAt: now,
 						date: localDate,
 						status: "in_progress",
@@ -149,6 +159,8 @@ export default function HomeScreen() {
 				<HomeHeader />
 
 				<HydrationWidget />
+
+				<StepsWidget />
 
 				{activeProgram ? (
 					<Pressable onPress={() => setDrawerVisible(true)} className="active:opacity-70">
@@ -222,7 +234,21 @@ export default function HomeScreen() {
 								style={{ backgroundColor: palette.muted.DEFAULT }}
 							>
 								<View className="flex-1">
-									<Text className="text-base font-semibold text-foreground">{session.name}</Text>
+									<View className="flex-row items-center gap-2">
+										<Text className="text-base font-semibold text-foreground">{session.name}</Text>
+										<View
+											style={{
+												backgroundColor: palette.accent.muted,
+												borderRadius: radius.sm,
+												paddingHorizontal: 6,
+												paddingVertical: 2,
+											}}
+										>
+											<Text className="text-xs font-bold" style={{ color: palette.accent.DEFAULT }}>
+												+{XP_REWARDS.workout} XP
+											</Text>
+										</View>
+									</View>
 									<Text className="text-xs mt-0.5" style={{ color: palette.muted.foreground }}>
 										{t("sessions.exerciseCount", { count: exerciseCount })}
 									</Text>

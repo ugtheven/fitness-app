@@ -66,6 +66,9 @@ export default {
 		emptyHint: "Create a program to start training.",
 		createProgram: "Create a program",
 		nextSession: "Next",
+		steps: "Steps",
+		stepsGoal5k: "5,000",
+		stepsGoal10k: "10,000",
 	},
 	pr: {
 		newRecord: "New PR! {{weight}} {{unit}}",

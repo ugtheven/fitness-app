@@ -41,6 +41,18 @@ export const palette = {
 	},
 	separator: "#38383A",
 	shadow: "#000000",
+	blue: {
+		DEFAULT: "#5AC8FA",
+		muted: "#5AC8FA50",
+	},
+	green: {
+		DEFAULT: "#30D158",
+		muted: "#30D15850",
+	},
+	orange: {
+		DEFAULT: "#FF9500",
+		muted: "#FF950050",
+	},
 } as const;
 
 export type Palette = typeof palette;

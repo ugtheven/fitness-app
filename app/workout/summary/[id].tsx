@@ -8,13 +8,7 @@ import { ActivityIndicator, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "../../../components/Button";
 import { db } from "../../../db";
-import {
-	sessions,
-	workoutExercises,
-	workoutSessions,
-	workoutSets,
-	xpLogs,
-} from "../../../db/schema";
+import { workoutExercises, workoutSessions, workoutSets, xpLogs } from "../../../db/schema";
 import { EXERCISE_VARIANTS_BY_ID } from "../../../lib/exerciseVariants";
 import { palette } from "../../../lib/palette";
 import { radius, typography } from "../../../lib/tokens";
@@ -30,15 +24,10 @@ export default function WorkoutSummaryScreen() {
 	const router = useRouter();
 
 	const { data: sessionData } = useLiveQuery(
-		db
-			.select({ workoutSession: workoutSessions, session: sessions })
-			.from(workoutSessions)
-			.leftJoin(sessions, eq(workoutSessions.sessionId, sessions.id))
-			.where(eq(workoutSessions.id, workoutSessionId))
+		db.select().from(workoutSessions).where(eq(workoutSessions.id, workoutSessionId))
 	);
-	const row = sessionData?.[0];
-	const workoutSession = row?.workoutSession;
-	const sessionName = row?.session?.name;
+	const workoutSession = sessionData?.[0];
+	const sessionName = workoutSession?.sessionName;
 
 	const { data: exerciseStats } = useLiveQuery(
 		db
@@ -82,7 +71,7 @@ export default function WorkoutSummaryScreen() {
 			.select()
 			.from(xpLogs)
 			.where(
-				sql`${xpLogs.source} = 'achievement' AND ${xpLogs.date} = ${sessionData?.[0]?.workoutSession?.date ?? ""}`
+				sql`${xpLogs.source} = 'achievement' AND ${xpLogs.date} = ${workoutSession?.date ?? ""}`
 			)
 	);
 

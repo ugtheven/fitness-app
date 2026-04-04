@@ -1,8 +1,17 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLiveQuery } from "drizzle-orm/expo-sqlite";
+import * as Haptics from "expo-haptics";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert, Pressable, ScrollView, Text, View } from "react-native";
+import Animated, {
+	runOnJS,
+	useAnimatedStyle,
+	useSharedValue,
+	withSequence,
+	withSpring,
+	withTiming,
+} from "react-native-reanimated";
 import { palette } from "../../lib/palette";
 import {
 	getActiveGoalsQuery,
@@ -60,6 +69,27 @@ export function GoalsTab() {
 	const { t } = useTranslation();
 	const { displayWeight, displayLength, weightUnit, lengthUnit } = useUnits();
 	const [showDrawer, setShowDrawer] = useState(false);
+	const [celebratingGoalId, setCelebratingGoalId] = useState<number | null>(null);
+	const celebrateScale = useSharedValue(1);
+	const celebrateOpacity = useSharedValue(1);
+	const celebrateStyle = useAnimatedStyle(() => ({
+		transform: [{ scale: celebrateScale.value }],
+		opacity: celebrateOpacity.value,
+	}));
+
+	function handleCelebrate(goalId: number) {
+		setCelebratingGoalId(goalId);
+		Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+		celebrateScale.value = withSequence(withSpring(1.05), withSpring(1));
+		celebrateOpacity.value = withTiming(0, { duration: 400 }, (finished) => {
+			if (finished) {
+				runOnJS(updateGoalStatus)(goalId, "achieved");
+				runOnJS(setCelebratingGoalId)(null);
+				celebrateOpacity.value = 1;
+				celebrateScale.value = 1;
+			}
+		});
+	}
 
 	const { data: activeGoals = [] } = useLiveQuery(getActiveGoalsQuery());
 	const { data: latestWeights = [] } = useLiveQuery(getLatestWeightQuery());
@@ -122,131 +152,138 @@ export function GoalsTab() {
 					const reached =
 						currentValue != null && isGoalReached(currentValue, goal.targetValue, goal.startValue);
 
+					const CardWrapper = goal.id === celebratingGoalId ? Animated.View : View;
+					const cardWrapperProps = goal.id === celebratingGoalId ? { style: celebrateStyle } : {};
+
 					return (
-						<View
-							key={goal.id}
-							className="px-5 py-4"
-							style={{
-								backgroundColor: palette.card.DEFAULT,
-								borderRadius: radius.lg,
-								borderWidth: reached ? borders.emphasis : 0,
-								borderColor: reached ? palette.accent.DEFAULT : "transparent",
-							}}
-						>
-							{/* Header: type + days */}
-							<View className="flex-row items-center justify-between mb-2">
-								<View className="flex-row items-center gap-2">
+						<CardWrapper key={goal.id} {...cardWrapperProps}>
+							<View
+								className="px-5 py-4"
+								style={{
+									backgroundColor: palette.card.DEFAULT,
+									borderRadius: radius.lg,
+									borderWidth: reached ? borders.emphasis : 0,
+									borderColor: reached ? palette.accent.DEFAULT : "transparent",
+								}}
+							>
+								{/* Header: type + days */}
+								<View className="flex-row items-center justify-between mb-2">
+									<View className="flex-row items-center gap-2">
+										<Ionicons
+											name={type === "weight" ? "scale-outline" : "body-outline"}
+											size={18}
+											color={reached ? palette.accent.DEFAULT : palette.foreground}
+										/>
+										<Text className="text-base font-semibold text-foreground">
+											{t(`profile.${type === "weight" ? "weight" : type}`)}
+										</Text>
+									</View>
+									{reached ? (
+										<View
+											className="flex-row items-center gap-1 px-2 py-1"
+											style={{ backgroundColor: palette.accent.muted, borderRadius: radius.md }}
+										>
+											<Ionicons name="checkmark-circle" size={14} color={palette.accent.DEFAULT} />
+											<Text
+												className="text-xs font-semibold"
+												style={{ color: palette.accent.DEFAULT }}
+											>
+												{t("profile.goalReached")}
+											</Text>
+										</View>
+									) : (
+										<View className="flex-row items-center gap-1">
+											<Ionicons
+												name="time-outline"
+												size={14}
+												color={days < 0 ? palette.destructive.DEFAULT : palette.muted.foreground}
+											/>
+											<Text
+												className="text-xs"
+												style={{
+													color: days < 0 ? palette.destructive.DEFAULT : palette.muted.foreground,
+												}}
+											>
+												{days < 0
+													? t("profile.expired")
+													: t("profile.daysRemaining", { count: days })}
+											</Text>
+										</View>
+									)}
+								</View>
+
+								{/* Values: current → target */}
+								<View className="flex-row items-baseline gap-1 mb-3">
+									<Text className="text-2xl font-bold text-foreground">
+										{displayValue(currentValue) ?? "—"}
+									</Text>
+									<Text className="text-sm" style={{ color: palette.muted.foreground }}>
+										{unit}
+									</Text>
 									<Ionicons
-										name={type === "weight" ? "scale-outline" : "body-outline"}
-										size={18}
-										color={reached ? palette.accent.DEFAULT : palette.foreground}
+										name="arrow-forward"
+										size={14}
+										color={palette.muted.foreground}
+										style={{ marginHorizontal: 4 }}
 									/>
-									<Text className="text-base font-semibold text-foreground">
-										{t(`profile.${type === "weight" ? "weight" : type}`)}
+									<Text className="text-2xl font-bold" style={{ color: palette.accent.DEFAULT }}>
+										{displayValue(goal.targetValue)}
+									</Text>
+									<Text className="text-sm" style={{ color: palette.muted.foreground }}>
+										{unit}
 									</Text>
 								</View>
-								{reached ? (
+
+								{/* Progress bar */}
+								<View
+									className="rounded-full overflow-hidden mb-3"
+									style={{ height: 6, backgroundColor: palette.muted.DEFAULT }}
+								>
 									<View
-										className="flex-row items-center gap-1 px-2 py-1"
+										className="rounded-full"
+										style={{
+											height: 6,
+											width: `${Math.round(progress * 100)}%`,
+											backgroundColor: reached ? palette.foreground : palette.accent.DEFAULT,
+										}}
+									/>
+								</View>
+
+								{/* Actions */}
+								{reached ? (
+									<Pressable
+										onPress={() => handleCelebrate(goal.id)}
+										className="items-center py-2 active:opacity-70"
 										style={{ backgroundColor: palette.accent.muted, borderRadius: radius.md }}
 									>
-										<Ionicons name="checkmark-circle" size={14} color={palette.accent.DEFAULT} />
 										<Text
-											className="text-xs font-semibold"
+											className="text-sm font-semibold"
 											style={{ color: palette.accent.DEFAULT }}
 										>
-											{t("profile.goalReached")}
+											{t("profile.confirmAchieved")}
 										</Text>
-									</View>
+									</Pressable>
 								) : (
-									<View className="flex-row items-center gap-1">
-										<Ionicons
-											name="time-outline"
-											size={14}
-											color={days < 0 ? palette.destructive.DEFAULT : palette.muted.foreground}
-										/>
-										<Text
-											className="text-xs"
-											style={{
-												color: days < 0 ? palette.destructive.DEFAULT : palette.muted.foreground,
-											}}
-										>
-											{days < 0
-												? t("profile.expired")
-												: t("profile.daysRemaining", { count: days })}
+									<Pressable
+										onPress={() =>
+											Alert.alert(t("profile.abandonTitle"), t("profile.abandonMessage"), [
+												{ text: t("common.cancel"), style: "cancel" },
+												{
+													text: t("profile.abandon"),
+													style: "destructive",
+													onPress: () => updateGoalStatus(goal.id, "abandoned"),
+												},
+											])
+										}
+										className="items-center py-2 active:opacity-70"
+									>
+										<Text className="text-xs" style={{ color: palette.muted.foreground }}>
+											{t("profile.abandon")}
 										</Text>
-									</View>
+									</Pressable>
 								)}
 							</View>
-
-							{/* Values: current → target */}
-							<View className="flex-row items-baseline gap-1 mb-3">
-								<Text className="text-2xl font-bold text-foreground">
-									{displayValue(currentValue) ?? "—"}
-								</Text>
-								<Text className="text-sm" style={{ color: palette.muted.foreground }}>
-									{unit}
-								</Text>
-								<Ionicons
-									name="arrow-forward"
-									size={14}
-									color={palette.muted.foreground}
-									style={{ marginHorizontal: 4 }}
-								/>
-								<Text className="text-2xl font-bold" style={{ color: palette.accent.DEFAULT }}>
-									{displayValue(goal.targetValue)}
-								</Text>
-								<Text className="text-sm" style={{ color: palette.muted.foreground }}>
-									{unit}
-								</Text>
-							</View>
-
-							{/* Progress bar */}
-							<View
-								className="rounded-full overflow-hidden mb-3"
-								style={{ height: 6, backgroundColor: palette.muted.DEFAULT }}
-							>
-								<View
-									className="rounded-full"
-									style={{
-										height: 6,
-										width: `${Math.round(progress * 100)}%`,
-										backgroundColor: reached ? palette.foreground : palette.accent.DEFAULT,
-									}}
-								/>
-							</View>
-
-							{/* Actions */}
-							{reached ? (
-								<Pressable
-									onPress={() => updateGoalStatus(goal.id, "achieved")}
-									className="items-center py-2 active:opacity-70"
-									style={{ backgroundColor: palette.accent.muted, borderRadius: radius.md }}
-								>
-									<Text className="text-sm font-semibold" style={{ color: palette.accent.DEFAULT }}>
-										{t("profile.confirmAchieved")}
-									</Text>
-								</Pressable>
-							) : (
-								<Pressable
-									onPress={() =>
-										Alert.alert(t("profile.abandonTitle"), t("profile.abandonMessage"), [
-											{ text: t("common.cancel"), style: "cancel" },
-											{
-												text: t("profile.abandon"),
-												style: "destructive",
-												onPress: () => updateGoalStatus(goal.id, "abandoned"),
-											},
-										])
-									}
-									className="items-center py-2 active:opacity-70"
-								>
-									<Text className="text-xs" style={{ color: palette.muted.foreground }}>
-										{t("profile.abandon")}
-									</Text>
-								</Pressable>
-							)}
-						</View>
+						</CardWrapper>
 					);
 				})}
 

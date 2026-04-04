@@ -12,6 +12,7 @@ export default {
 		program: "Program",
 		session: "Session",
 		exercise: "Exercise",
+		confirm: "Confirm",
 		close: "Close",
 		skip: "Skip",
 	},

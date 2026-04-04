@@ -305,3 +305,11 @@ export const EXERCISE_VARIANTS: ExerciseVariant[] = [
 export const EXERCISE_VARIANTS_BY_ID = Object.fromEntries(
 	EXERCISE_VARIANTS.map((variant) => [variant.id, variant])
 ) as Record<string, ExerciseVariant>;
+
+/** Fallback: format a variant ID like "barbell_bench_press" → "Barbell Bench Press" */
+export function formatVariantId(id: string): string {
+	return id
+		.split("_")
+		.map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+		.join(" ");
+}

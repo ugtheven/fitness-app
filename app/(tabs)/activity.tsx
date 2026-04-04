@@ -64,6 +64,18 @@ export default function ActivityScreen() {
 
 	const [prCounts, setPrCounts] = useState<Map<number, number>>(new Map());
 	const loadedIdsRef = useRef<Set<number>>(new Set());
+	const hasAutoSelectedRef = useRef(false);
+
+	// Auto-select the most recent workout date on first load
+	useEffect(() => {
+		if (hasAutoSelectedRef.current || workouts.length === 0) return;
+		const mostRecent = workouts.reduce(
+			(latest, w) => (w.date > latest ? w.date : latest),
+			workouts[0].date
+		);
+		setSelectedDate(mostRecent);
+		hasAutoSelectedRef.current = true;
+	}, [workouts]);
 
 	// Load PRs for new workouts
 	useEffect(() => {
@@ -74,17 +86,23 @@ export default function ActivityScreen() {
 			loadedIdsRef.current.add(w.id);
 		}
 
-		Promise.all(
-			newIds.map((w) => getSessionPRs(w.id).then((prs) => [w.id, prs.length] as const))
-		).then((results) => {
-			setPrCounts((prev) => {
-				const next = new Map(prev);
-				for (const [id, count] of results) {
-					if (count > 0) next.set(id, count);
-				}
-				return next;
-			});
-		});
+		let cancelled = false;
+		Promise.all(newIds.map((w) => getSessionPRs(w.id).then((prs) => [w.id, prs.length] as const)))
+			.then((results) => {
+				if (cancelled) return;
+				setPrCounts((prev) => {
+					const next = new Map(prev);
+					for (const [id, count] of results) {
+						if (count > 0) next.set(id, count);
+					}
+					return next;
+				});
+			})
+			.catch(() => {});
+
+		return () => {
+			cancelled = true;
+		};
 	}, [workouts]);
 
 	// Build Set<string> of dates with workouts for the calendar dots
@@ -130,9 +148,20 @@ export default function ActivityScreen() {
 		}
 		const totalHours = Math.round((totalTimeMs / 3_600_000) * 10) / 10;
 		const displayedVolume = displayWeight(totalVolume);
-		const totalTons = Math.round(displayedVolume / 100) / 10;
-		return { sessions: workouts.length, volume: totalTons, hours: totalHours };
-	}, [workouts, displayWeight]);
+		let volumeLabel: string;
+		let volumeUnit: string;
+		if (displayedVolume === 0) {
+			volumeLabel = "—";
+			volumeUnit = "";
+		} else if (displayedVolume < 1000) {
+			volumeLabel = String(Math.round(displayedVolume));
+			volumeUnit = weightUnit;
+		} else {
+			volumeLabel = String(Math.round(displayedVolume / 100) / 10);
+			volumeUnit = "t";
+		}
+		return { sessions: workouts.length, volumeLabel, volumeUnit, hours: totalHours };
+	}, [workouts, displayWeight, weightUnit]);
 
 	return (
 		<SafeAreaView className="flex-1 bg-background" edges={["top"]}>
@@ -168,10 +197,12 @@ export default function ActivityScreen() {
 							{t("activity.statVolume")}
 						</Text>
 						<View className="flex-row items-baseline">
-							<Text className="text-2xl font-bold text-foreground">{monthStats.volume}</Text>
-							<Text className="text-sm ml-1" style={{ color: palette.muted.foreground }}>
-								tons
-							</Text>
+							<Text className="text-2xl font-bold text-foreground">{monthStats.volumeLabel}</Text>
+							{monthStats.volumeUnit !== "" && (
+								<Text className="text-sm ml-1" style={{ color: palette.muted.foreground }}>
+									{monthStats.volumeUnit}
+								</Text>
+							)}
 						</View>
 					</View>
 					<View

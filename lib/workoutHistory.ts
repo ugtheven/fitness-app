@@ -1,6 +1,6 @@
 import { and, desc, eq, gte, isNotNull, lt, sql } from "drizzle-orm";
 import { db } from "../db";
-import { sessions, workoutExercises, workoutSessions, workoutSets } from "../db/schema";
+import { workoutExercises, workoutSessions, workoutSets } from "../db/schema";
 
 // --- Types ---
 
@@ -328,7 +328,7 @@ export function getWorkoutsByMonthQuery(year: number, month: number) {
 			startedAt: workoutSessions.startedAt,
 			endedAt: workoutSessions.endedAt,
 			date: workoutSessions.date,
-			sessionName: sessions.name,
+			sessionName: workoutSessions.sessionName,
 			exerciseCount: sql<number>`COUNT(DISTINCT ${workoutExercises.id})`,
 			setCount: sql<number>`COUNT(${workoutSets.id})`,
 			totalVolume: sql<number>`COALESCE(SUM(
@@ -337,7 +337,6 @@ export function getWorkoutsByMonthQuery(year: number, month: number) {
 			), 0)`,
 		})
 		.from(workoutSessions)
-		.leftJoin(sessions, eq(workoutSessions.sessionId, sessions.id))
 		.leftJoin(workoutExercises, eq(workoutExercises.workoutSessionId, workoutSessions.id))
 		.leftJoin(workoutSets, eq(workoutSets.workoutExerciseId, workoutExercises.id))
 		.where(
@@ -357,7 +356,7 @@ export function getRecentWorkoutsQuery() {
 			id: workoutSessions.id,
 			startedAt: workoutSessions.startedAt,
 			endedAt: workoutSessions.endedAt,
-			sessionName: sessions.name,
+			sessionName: workoutSessions.sessionName,
 			exerciseCount: sql<number>`COUNT(DISTINCT ${workoutExercises.id})`,
 			setCount: sql<number>`COUNT(${workoutSets.id})`,
 			totalVolume: sql<number>`COALESCE(SUM(
@@ -366,7 +365,6 @@ export function getRecentWorkoutsQuery() {
 			), 0)`,
 		})
 		.from(workoutSessions)
-		.leftJoin(sessions, eq(workoutSessions.sessionId, sessions.id))
 		.leftJoin(workoutExercises, eq(workoutExercises.workoutSessionId, workoutSessions.id))
 		.leftJoin(workoutSets, eq(workoutSets.workoutExerciseId, workoutExercises.id))
 		.where(eq(workoutSessions.status, "completed"))

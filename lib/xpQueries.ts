@@ -25,7 +25,7 @@ export function getUnlockedAchievementsQuery() {
 	return db.select().from(userAchievements);
 }
 
-export function getXpLogsForSourceQuery(source: string, sourceId: number) {
+export function getXpLogsForSourceQuery(source: string, sourceId: string) {
 	return db
 		.select()
 		.from(xpLogs)
@@ -39,8 +39,8 @@ export function getXpLogsForSourceQuery(source: string, sourceId: number) {
  */
 export async function grantXp(
 	amount: number,
-	source: "workout" | "hydration" | "achievement",
-	sourceId: number,
+	source: "workout" | "hydration" | "achievement" | "steps",
+	sourceId: string,
 	date: string
 ): Promise<XpGrantResult> {
 	return await db.transaction(async (tx) => {
@@ -86,6 +86,22 @@ export async function grantXp(
 }
 
 /**
+ * Recalculate userLevel from xpLogs (safety net for cache corruption).
+ * Call on app startup or from debug tools.
+ */
+export async function recalculateLevel(): Promise<void> {
+	const [row] = await db
+		.select({ total: sql<number>`COALESCE(SUM(${xpLogs.amount}), 0)` })
+		.from(xpLogs);
+	const totalXp = row?.total ?? 0;
+	const level = levelForXp(totalXp);
+	await db
+		.update(userLevel)
+		.set({ totalXp, level, updatedAt: new Date().toISOString() })
+		.where(eq(userLevel.id, 1));
+}
+
+/**
  * Check all achievements and grant XP for newly unlocked ones.
  * Returns the list of newly unlocked achievements.
  */
@@ -102,19 +118,21 @@ export async function checkAndGrantAchievements(date: string): Promise<NewAchiev
 		const passed = await achievement.check(db);
 		if (!passed) continue;
 
-		// Insert achievement
-		await db.insert(userAchievements).values({
-			achievementId: achievement.id,
-			unlockedAt: new Date().toISOString(),
+		// Insert achievement + grant XP atomically
+		const insertedId = await db.transaction(async (tx) => {
+			await tx.insert(userAchievements).values({
+				achievementId: achievement.id,
+				unlockedAt: new Date().toISOString(),
+			});
+			const [row] = await tx
+				.select({ id: userAchievements.id })
+				.from(userAchievements)
+				.where(eq(userAchievements.achievementId, achievement.id));
+			return row.id;
 		});
 
-		// Grant achievement XP (uses achievement row ID as sourceId)
-		const [inserted] = await db
-			.select({ id: userAchievements.id })
-			.from(userAchievements)
-			.where(eq(userAchievements.achievementId, achievement.id));
-
-		const xpResult = await grantXp(achievement.xp, "achievement", inserted.id, date);
+		// grantXp has its own transaction — safe to call outside
+		const xpResult = await grantXp(achievement.xp, "achievement", String(insertedId), date);
 		newlyUnlocked.push({ ...achievement, xpResult });
 	}
 

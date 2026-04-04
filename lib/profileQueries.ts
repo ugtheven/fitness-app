@@ -58,14 +58,61 @@ export function getActiveGoalsQuery() {
 
 // ─── Mutations ──────────────────────────────────────────────────────────────
 
-export async function insertWeightLog(date: string, weightKg: number) {
+/**
+ * Insert or update a weight log. When called from HealthKit sync, pass
+ * `skipHealthKit: true` and optionally a `healthkitUuid` to avoid re-pushing.
+ */
+export async function insertWeightLog(
+	date: string,
+	weightKg: number,
+	options?: { skipHealthKit?: boolean; healthkitUuid?: string | null }
+) {
+	const skip = options?.skipHealthKit ?? false;
+	let uuid = options?.healthkitUuid ?? null;
+
+	if (!skip) {
+		// Lazy-import to avoid circular deps and keep HealthKit optional
+		const { isHealthKitEnabled, writeWeightToHealthKit, deleteWeightFromHealthKit } = await import(
+			"./healthkit"
+		);
+		const enabled = await isHealthKitEnabled();
+		if (enabled) {
+			// Delete old HealthKit sample if one exists for this date
+			const existing = await db
+				.select({ healthkitUuid: weightLogs.healthkitUuid })
+				.from(weightLogs)
+				.where(eq(weightLogs.date, date));
+			if (existing[0]?.healthkitUuid) {
+				await deleteWeightFromHealthKit(existing[0].healthkitUuid);
+			}
+			uuid = await writeWeightToHealthKit(date, weightKg);
+		}
+	}
+
 	await db
 		.insert(weightLogs)
-		.values({ date, weightKg })
+		.values({ date, weightKg, healthkitUuid: uuid })
 		.onConflictDoUpdate({
 			target: weightLogs.date,
-			set: { weightKg, createdAt: new Date().toISOString() },
+			set: { weightKg, healthkitUuid: uuid, createdAt: new Date().toISOString() },
 		});
+}
+
+export async function deleteWeightLog(date: string) {
+	const existing = await db
+		.select({ healthkitUuid: weightLogs.healthkitUuid })
+		.from(weightLogs)
+		.where(eq(weightLogs.date, date));
+
+	if (existing[0]?.healthkitUuid) {
+		const { isHealthKitEnabled, deleteWeightFromHealthKit } = await import("./healthkit");
+		const enabled = await isHealthKitEnabled();
+		if (enabled) {
+			await deleteWeightFromHealthKit(existing[0].healthkitUuid);
+		}
+	}
+
+	await db.delete(weightLogs).where(eq(weightLogs.date, date));
 }
 
 export async function upsertHeight(heightCm: number) {
@@ -97,14 +144,25 @@ export async function insertBodyMeasurements(data: {
 		});
 }
 
-export async function updateMeasurementField(date: string, key: string, value: number) {
+type MeasurementField =
+	| "bodyFat"
+	| "shoulders"
+	| "chest"
+	| "waist"
+	| "hips"
+	| "neck"
+	| "arms"
+	| "thigh"
+	| "calf";
+
+export async function updateMeasurementField(date: string, key: MeasurementField, value: number) {
 	await db
 		.update(bodyMeasurements)
 		.set({ [key]: value })
 		.where(eq(bodyMeasurements.date, date));
 }
 
-export async function deleteMeasurementField(date: string, key: string) {
+export async function deleteMeasurementField(date: string, key: MeasurementField) {
 	await db
 		.update(bodyMeasurements)
 		.set({ [key]: null })

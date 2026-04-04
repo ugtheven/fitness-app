@@ -7,9 +7,16 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import Animated, { FadeIn, useAnimatedStyle, withTiming } from "react-native-reanimated";
+import Animated, {
+	Easing,
+	FadeIn,
+	useAnimatedStyle,
+	useSharedValue,
+	withTiming,
+} from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Circle, Svg } from "react-native-svg";
+import { useAchievementToast } from "../../../components/AchievementToast";
 import { Button } from "../../../components/Button";
 import { ScreenHeader } from "../../../components/ScreenHeader";
 import { db } from "../../../db";
@@ -26,6 +33,8 @@ import { glass, radius, typography } from "../../../lib/tokens";
 import { useUnits } from "../../../lib/units";
 import { useSessionTimer } from "../../../lib/useSessionTimer";
 import { type PrefillSet, getExercisePR, getLastSets } from "../../../lib/workoutHistory";
+import { XP_REWARDS } from "../../../lib/xp";
+import { checkAndGrantAchievements, grantXp } from "../../../lib/xpQueries";
 
 export default function ExerciseScreen() {
 	const { t } = useTranslation();
@@ -33,6 +42,7 @@ export default function ExerciseScreen() {
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const workoutExerciseId = Number(id);
 	const router = useRouter();
+	const { showAchievementToast, showLevelUpToast } = useAchievementToast();
 
 	const [reps, setReps] = useState(10);
 	const [repsLeft, setRepsLeft] = useState(10);
@@ -48,6 +58,12 @@ export default function ExerciseScreen() {
 	const [isPrefillLoading, setIsPrefillLoading] = useState(true);
 	const [newPRWeight, setNewPRWeight] = useState<number | null>(null);
 	const [undoSetId, setUndoSetId] = useState<number | null>(null);
+	const [isPrefilled, setIsPrefilled] = useState(false);
+
+	const undoProgress = useSharedValue(1);
+	const undoBarStyle = useAnimatedStyle(() => ({
+		width: `${Math.round(undoProgress.value * 100)}%`,
+	}));
 
 	const restIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 	const prTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -55,6 +71,14 @@ export default function ExerciseScreen() {
 	const hasInitializedRef = useRef(false);
 	const prefillSetsRef = useRef<PrefillSet[]>([]);
 	const prMaxRef = useRef<number | null>(null);
+
+	// Cleanup all timers on unmount
+	useEffect(() => {
+		return () => {
+			if (prTimerRef.current) clearTimeout(prTimerRef.current);
+			if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+		};
+	}, []);
 
 	const { data: exerciseData } = useLiveQuery(
 		db
@@ -92,11 +116,8 @@ export default function ExerciseScreen() {
 		const v = EXERCISE_VARIANTS_BY_ID[variantId];
 		const isBodyweight = v?.equipment === "bodyweight";
 
-		getExercisePR(variantId).then((pr) => {
+		Promise.all([getExercisePR(variantId), getLastSets(variantId)]).then(([pr, prefillSets]) => {
 			prMaxRef.current = pr?.maxWeight ?? null;
-		});
-
-		getLastSets(variantId).then((prefillSets) => {
 			prefillSetsRef.current = prefillSets;
 
 			// Use first prefill set if available, otherwise fall back to template
@@ -258,6 +279,24 @@ export default function ExerciseScreen() {
 				// Clear any pending undo — the exercise/session is now finalized
 				if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
 				setUndoSetId(null);
+
+				if (sessionCompleted) {
+					// Grant XP + check achievements before navigating
+					const date = exerciseRow.workoutSession.date;
+					const xpResult = await grantXp(
+						XP_REWARDS.workout,
+						"workout",
+						String(sessionWorkoutId),
+						date
+					);
+					if (xpResult.leveledUp) showLevelUpToast(xpResult.newLevel);
+					const newAchievements = await checkAndGrantAchievements(date);
+					for (const a of newAchievements) {
+						showAchievementToast(a);
+						if (a.xpResult.leveledUp) showLevelUpToast(a.xpResult.newLevel);
+					}
+				}
+
 				// Brief delay so the user sees the stepper fully green
 				await new Promise((resolve) => setTimeout(resolve, 350));
 				if (sessionCompleted) {
@@ -270,6 +309,11 @@ export default function ExerciseScreen() {
 				if (insertedSetId != null) {
 					if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
 					setUndoSetId(insertedSetId);
+					undoProgress.value = 1;
+					undoProgress.value = withTiming(0, {
+						duration: 5000,
+						easing: Easing.linear,
+					});
 					undoTimerRef.current = setTimeout(() => setUndoSetId(null), 5000);
 				}
 
@@ -442,6 +486,14 @@ export default function ExerciseScreen() {
 									);
 								})}
 							</View>
+							{unilateralSide === "right" && (
+								<View className="flex-row items-center justify-center gap-1.5 -mb-2">
+									<Ionicons name="checkmark" size={14} color={palette.accent.DEFAULT} />
+									<Text className="text-sm" style={{ color: palette.accent.DEFAULT }}>
+										{t("workout.repsLeft")} : {repsLeft} reps
+									</Text>
+								</View>
+							)}
 							<ValueCard
 								label={unilateralSide === "left" ? t("workout.repsLeft") : t("workout.repsRight")}
 								value={unilateralSide === "left" ? repsLeft : repsRight}

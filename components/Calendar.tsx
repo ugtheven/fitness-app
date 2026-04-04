@@ -152,7 +152,7 @@ export function Calendar({
 						const isSelected = dateStr === selectedDate;
 						const isToday = dateStr === todayStr;
 						const hasWorkout = workoutDates.has(dateStr);
-						const isPast = dateStr > todayStr;
+						const isPast = dateStr < todayStr;
 
 						return (
 							<Pressable
@@ -178,7 +178,7 @@ export function Calendar({
 									<Text
 										style={[
 											{ fontSize: 14 },
-											hasWorkout && !isPast
+											hasWorkout
 												? { fontWeight: "700", color: palette.foreground }
 												: isPast
 													? { fontWeight: "400", color: palette.muted.foreground }

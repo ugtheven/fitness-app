@@ -325,17 +325,16 @@ function MeasurementChart({
 					</SvgText>
 				))}
 				<Path d={chart.dataPath} stroke={palette.accent.DEFAULT} strokeWidth={2.5} fill="none" />
-				{chart.points.map((p, i) => (
+				{selected && (
 					<Circle
-						key={`pt-${p.date}`}
-						cx={chart.toX(p.x)}
-						cy={chart.toY(p.y)}
-						r={selectedIndex === i ? 6 : 4}
-						fill={selectedIndex === i ? palette.accent.DEFAULT : palette.background}
-						stroke={palette.accent.DEFAULT}
+						cx={chart.toX(selected.x)}
+						cy={chart.toY(selected.y)}
+						r={6}
+						fill={palette.accent.DEFAULT}
+						stroke={palette.background}
 						strokeWidth={2}
 					/>
-				))}
+				)}
 			</Svg>
 
 			{/* Hit targets */}

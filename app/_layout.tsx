@@ -9,7 +9,6 @@ import { db } from "../db";
 import migrations from "../drizzle/migrations";
 import { initI18n } from "../lib/i18n";
 import { palette } from "../lib/palette";
-import { seedWeightLogs } from "../lib/seedWeight";
 import {
 	UnitContext,
 	type UnitSystem,
@@ -35,9 +34,12 @@ export default function RootLayout() {
 	useEffect(() => {
 		console.log("[migrations]", { success, error: error?.message });
 		if (success) {
-			seedWeightLogs()
-				.then(() => console.log("[seed] done"))
-				.catch((e) => console.error("[seed] error", e));
+			// HealthKit: request permissions + sync on every app open
+			import("../lib/healthkit")
+				.then(({ requestHealthKitPermissions, syncHealthKitData }) =>
+					requestHealthKitPermissions().then(() => syncHealthKitData())
+				)
+				.catch((e) => console.error("[healthkit]", e));
 		}
 	}, [success, error]);
 

@@ -1,4 +1,4 @@
-import { index, int, real, sqliteTable, text, unique, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { index, int, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 export const programs = sqliteTable("programs", {
 	id: int("id").primaryKey({ autoIncrement: true }),
@@ -42,6 +42,9 @@ export const workoutSessions = sqliteTable(
 		sessionId: int("session_id").references(() => sessions.id, { onDelete: "set null" }),
 		// Snapshot: set null si le programme est supprimé, mais l'historique reste consultable par programme
 		programId: int("program_id").references(() => programs.id, { onDelete: "set null" }),
+		// Snapshot noms au lancement — l'historique reste lisible même après suppression du programme/session
+		sessionName: text("session_name"),
+		programName: text("program_name"),
 		startedAt: text("started_at").notNull(),
 		endedAt: text("ended_at"),
 		/** Local date YYYY-MM-DD — used for calendar, stats, streaks (timezone-safe) */
@@ -50,7 +53,10 @@ export const workoutSessions = sqliteTable(
 			.notNull()
 			.default("in_progress"),
 	},
-	(t) => [index("workout_sessions_date_idx").on(t.date)]
+	(t) => [
+		index("workout_sessions_date_idx").on(t.date),
+		index("workout_sessions_status_date_idx").on(t.status, t.date),
+	]
 );
 
 export const workoutExercises = sqliteTable(
@@ -112,6 +118,7 @@ export const weightLogs = sqliteTable(
 		id: int("id").primaryKey({ autoIncrement: true }),
 		date: text("date").notNull(),
 		weightKg: real("weight_kg").notNull(),
+		healthkitUuid: text("healthkit_uuid"),
 		createdAt: text("created_at").$defaultFn(() => new Date().toISOString()),
 	},
 	(t) => [uniqueIndex("weight_logs_date_idx").on(t.date)]
@@ -140,6 +147,7 @@ export const goals = sqliteTable("goals", {
 	id: int("id").primaryKey({ autoIncrement: true }),
 	type: text("type", {
 		enum: [
+			// Body measurements
 			"weight",
 			"bodyFat",
 			"shoulders",
@@ -150,8 +158,13 @@ export const goals = sqliteTable("goals", {
 			"arms",
 			"thigh",
 			"calf",
+			// Performance (future)
+			"weeklyWorkouts",
+			"exerciseWeight",
 		],
 	}).notNull(),
+	// Pour les goals de type "exerciseWeight" — référence au variant ciblé
+	exerciseVariantId: text("exercise_variant_id"),
 	targetValue: real("target_value").notNull(),
 	startValue: real("start_value").notNull(),
 	deadline: text("deadline").notNull(),
@@ -171,8 +184,8 @@ export const xpLogs = sqliteTable(
 	{
 		id: int("id").primaryKey({ autoIncrement: true }),
 		amount: int("amount").notNull(),
-		source: text("source", { enum: ["workout", "hydration", "achievement"] }).notNull(),
-		sourceId: int("source_id"),
+		source: text("source", { enum: ["workout", "hydration", "achievement", "steps"] }).notNull(),
+		sourceId: text("source_id"),
 		date: text("date").notNull(),
 		createdAt: text("created_at").$defaultFn(() => new Date().toISOString()),
 	},

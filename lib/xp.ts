@@ -2,6 +2,8 @@
 export const XP_REWARDS = {
 	workout: 50,
 	hydration: 20,
+	steps5k: 15,
+	steps10k: 30,
 } as const;
 
 /**

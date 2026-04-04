@@ -9,13 +9,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useAchievementToast } from "../../components/AchievementToast";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { db } from "../../db";
-import {
-	programs,
-	sessionExercises,
-	sessions,
-	workoutExercises,
-	workoutSessions,
-} from "../../db/schema";
+import { sessionExercises, workoutExercises, workoutSessions } from "../../db/schema";
 import type { Equipment } from "../../lib/exerciseTypes";
 import { EXERCISE_VARIANTS_BY_ID } from "../../lib/exerciseVariants";
 import { palette } from "../../lib/palette";
@@ -42,24 +36,14 @@ export default function WorkoutScreen() {
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const workoutSessionId = Number(id);
 	const router = useRouter();
-	const { showAchievementToast } = useAchievementToast();
+	const { showLevelUpToast } = useAchievementToast();
 
 	const { data: workoutSessionData } = useLiveQuery(
-		db
-			.select({
-				workoutSession: workoutSessions,
-				session: sessions,
-				program: programs,
-			})
-			.from(workoutSessions)
-			.leftJoin(sessions, eq(workoutSessions.sessionId, sessions.id))
-			.leftJoin(programs, eq(sessions.programId, programs.id))
-			.where(eq(workoutSessions.id, workoutSessionId))
+		db.select().from(workoutSessions).where(eq(workoutSessions.id, workoutSessionId))
 	);
-	const workoutSessionRow = workoutSessionData?.[0];
-	const workoutSession = workoutSessionRow?.workoutSession;
-	const sessionName = workoutSessionRow?.session?.name;
-	const programName = workoutSessionRow?.program?.name;
+	const workoutSession = workoutSessionData?.[0];
+	const sessionName = workoutSession?.sessionName;
+	const programName = workoutSession?.programName;
 
 	const { data: exerciseRows = [] } = useLiveQuery(
 		db
@@ -77,7 +61,9 @@ export default function WorkoutScreen() {
 	const itemLayoutsRef = useRef<Record<number, number>>({});
 	const hasScrolledRef = useRef(false);
 
-	// Auto-finalize when all exercises are completed
+	// Safety net: if all exercises are done but session is still in_progress
+	// (e.g. exercise screen navigated back before finalizing), mark it completed.
+	// XP is granted in exercise/[id].tsx at finalization time.
 	useEffect(() => {
 		if (!workoutSession || workoutSession.status === "completed") return;
 		if (exerciseRows.length === 0) return;
@@ -95,15 +81,14 @@ export default function WorkoutScreen() {
 					and(eq(workoutSessions.id, workoutSessionId), eq(workoutSessions.status, "in_progress"))
 				);
 
+			// Grant XP idempotently (may already have been granted by exercise screen)
 			const date = workoutSession.date;
-			await grantXp(XP_REWARDS.workout, "workout", workoutSessionId, date);
-			const newAchievements = await checkAndGrantAchievements(date);
-			for (const a of newAchievements) {
-				showAchievementToast(a);
-			}
+			const xpResult = await grantXp(XP_REWARDS.workout, "workout", String(workoutSessionId), date);
+			if (xpResult.leveledUp) showLevelUpToast(xpResult.newLevel);
+			await checkAndGrantAchievements(date);
 		}
 		finalize();
-	}, [exerciseRows, workoutSession, workoutSessionId, showAchievementToast]);
+	}, [exerciseRows, workoutSession, workoutSessionId, showLevelUpToast]);
 
 	const doneCount = exerciseRows.filter(
 		({ workoutExercise }) => workoutExercise.status === "completed"
@@ -126,11 +111,21 @@ export default function WorkoutScreen() {
 
 	if (!workoutSession) return null;
 
+	if (exerciseRows.length === 0) {
+		return (
+			<SafeAreaView className="flex-1 bg-background items-center justify-center" edges={["top"]}>
+				<Text className="text-base" style={{ color: palette.muted.foreground }}>
+					{t("home.emptySessionTitle")}
+				</Text>
+			</SafeAreaView>
+		);
+	}
+
 	return (
 		<SafeAreaView className="flex-1 bg-background" edges={["top"]}>
 			<ScreenHeader
 				title={sessionName ?? "—"}
-				subtitle={programName}
+				subtitle={programName ?? undefined}
 				onBack={() => router.back()}
 				action={
 					<View

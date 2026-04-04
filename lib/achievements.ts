@@ -11,6 +11,7 @@ export type AchievementDef = {
 	iconName: string;
 	xp: number;
 	check: CheckFn;
+	progress?: (db: Database) => Promise<{ current: number; target: number }>;
 };
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -23,7 +24,7 @@ async function countCompletedWorkouts(db: Database): Promise<number> {
 	return row?.count ?? 0;
 }
 
-async function countPRExercises(db: Database): Promise<number> {
+async function countTrackedExercises(db: Database): Promise<number> {
 	// Count distinct exercise variants that have at least one recorded weight
 	const [row] = await db
 		.select({ count: sql<number>`COUNT(DISTINCT ${workoutExercises.exerciseVariantId})` })
@@ -35,13 +36,9 @@ async function countPRExercises(db: Database): Promise<number> {
 }
 
 async function hydrationStreak(db: Database, requiredDays: number): Promise<boolean> {
-	// Get the last N days of hydration logs ordered by date desc
+	// Get the last N days where goal was met, most recent first
 	const logs = await db
-		.select({
-			date: hydrationLogs.date,
-			volumeMl: hydrationLogs.volumeMl,
-			goalMl: hydrationLogs.goalMl,
-		})
+		.select({ date: hydrationLogs.date })
 		.from(hydrationLogs)
 		.where(gte(hydrationLogs.volumeMl, hydrationLogs.goalMl))
 		.orderBy(sql`${hydrationLogs.date} DESC`)
@@ -49,15 +46,49 @@ async function hydrationStreak(db: Database, requiredDays: number): Promise<bool
 
 	if (logs.length < requiredDays) return false;
 
+	// The most recent log must be today or yesterday (streak still active)
+	const now = new Date();
+	const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+	const yesterday = new Date(now.getTime() - 86400000);
+	const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, "0")}-${String(yesterday.getDate()).padStart(2, "0")}`;
+
+	if (logs[0].date !== today && logs[0].date !== yesterdayStr) return false;
+
 	// Check that the dates are consecutive
 	for (let i = 0; i < logs.length - 1; i++) {
 		const current = new Date(logs[i].date);
 		const next = new Date(logs[i + 1].date);
 		const diffMs = current.getTime() - next.getTime();
-		const diffDays = diffMs / (1000 * 60 * 60 * 24);
-		if (Math.round(diffDays) !== 1) return false;
+		if (Math.round(diffMs / 86400000) !== 1) return false;
 	}
 	return true;
+}
+
+async function currentHydrationStreak(db: Database): Promise<number> {
+	const logs = await db
+		.select({ date: hydrationLogs.date })
+		.from(hydrationLogs)
+		.where(gte(hydrationLogs.volumeMl, hydrationLogs.goalMl))
+		.orderBy(sql`${hydrationLogs.date} DESC`);
+
+	if (logs.length === 0) return 0;
+
+	const now = new Date();
+	const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+	const yesterday = new Date(now.getTime() - 86400000);
+	const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, "0")}-${String(yesterday.getDate()).padStart(2, "0")}`;
+
+	if (logs[0].date !== today && logs[0].date !== yesterdayStr) return 0;
+
+	let streak = 1;
+	for (let i = 0; i < logs.length - 1; i++) {
+		const current = new Date(logs[i].date);
+		const next = new Date(logs[i + 1].date);
+		const diffMs = current.getTime() - next.getTime();
+		if (Math.round(diffMs / 86400000) !== 1) break;
+		streak++;
+	}
+	return streak;
 }
 
 async function countAchievedGoals(db: Database): Promise<number> {
@@ -79,6 +110,10 @@ export const ACHIEVEMENTS: AchievementDef[] = [
 		iconName: "footsteps-outline",
 		xp: 50,
 		check: async (db) => (await countCompletedWorkouts(db)) >= 1,
+		progress: async (db) => ({
+			current: Math.min(await countCompletedWorkouts(db), 1),
+			target: 1,
+		}),
 	},
 	{
 		id: "workouts_10",
@@ -87,6 +122,10 @@ export const ACHIEVEMENTS: AchievementDef[] = [
 		iconName: "flame-outline",
 		xp: 100,
 		check: async (db) => (await countCompletedWorkouts(db)) >= 10,
+		progress: async (db) => ({
+			current: Math.min(await countCompletedWorkouts(db), 10),
+			target: 10,
+		}),
 	},
 	{
 		id: "workouts_50",
@@ -95,6 +134,10 @@ export const ACHIEVEMENTS: AchievementDef[] = [
 		iconName: "hardware-chip-outline",
 		xp: 200,
 		check: async (db) => (await countCompletedWorkouts(db)) >= 50,
+		progress: async (db) => ({
+			current: Math.min(await countCompletedWorkouts(db), 50),
+			target: 50,
+		}),
 	},
 	{
 		id: "workouts_100",
@@ -103,6 +146,10 @@ export const ACHIEVEMENTS: AchievementDef[] = [
 		iconName: "shield-checkmark-outline",
 		xp: 200,
 		check: async (db) => (await countCompletedWorkouts(db)) >= 100,
+		progress: async (db) => ({
+			current: Math.min(await countCompletedWorkouts(db), 100),
+			target: 100,
+		}),
 	},
 	// PRs
 	{
@@ -111,7 +158,11 @@ export const ACHIEVEMENTS: AchievementDef[] = [
 		descriptionKey: "achievements.first_pr_desc",
 		iconName: "trending-up-outline",
 		xp: 50,
-		check: async (db) => (await countPRExercises(db)) >= 1,
+		check: async (db) => (await countTrackedExercises(db)) >= 1,
+		progress: async (db) => ({
+			current: Math.min(await countTrackedExercises(db), 1),
+			target: 1,
+		}),
 	},
 	{
 		id: "prs_10",
@@ -119,7 +170,11 @@ export const ACHIEVEMENTS: AchievementDef[] = [
 		descriptionKey: "achievements.prs_10_desc",
 		iconName: "ribbon-outline",
 		xp: 100,
-		check: async (db) => (await countPRExercises(db)) >= 10,
+		check: async (db) => (await countTrackedExercises(db)) >= 10,
+		progress: async (db) => ({
+			current: Math.min(await countTrackedExercises(db), 10),
+			target: 10,
+		}),
 	},
 	// Hydration streaks
 	{
@@ -129,6 +184,10 @@ export const ACHIEVEMENTS: AchievementDef[] = [
 		iconName: "water-outline",
 		xp: 50,
 		check: async (db) => hydrationStreak(db, 3),
+		progress: async (db) => ({
+			current: Math.min(await currentHydrationStreak(db), 3),
+			target: 3,
+		}),
 	},
 	{
 		id: "hydration_streak_7",
@@ -137,6 +196,10 @@ export const ACHIEVEMENTS: AchievementDef[] = [
 		iconName: "water-outline",
 		xp: 100,
 		check: async (db) => hydrationStreak(db, 7),
+		progress: async (db) => ({
+			current: Math.min(await currentHydrationStreak(db), 7),
+			target: 7,
+		}),
 	},
 	{
 		id: "hydration_streak_30",
@@ -145,6 +208,10 @@ export const ACHIEVEMENTS: AchievementDef[] = [
 		iconName: "water-outline",
 		xp: 200,
 		check: async (db) => hydrationStreak(db, 30),
+		progress: async (db) => ({
+			current: Math.min(await currentHydrationStreak(db), 30),
+			target: 30,
+		}),
 	},
 	// Goals
 	{
@@ -154,6 +221,10 @@ export const ACHIEVEMENTS: AchievementDef[] = [
 		iconName: "flag-outline",
 		xp: 50,
 		check: async (db) => (await countAchievedGoals(db)) >= 1,
+		progress: async (db) => ({
+			current: Math.min(await countAchievedGoals(db), 1),
+			target: 1,
+		}),
 	},
 	// Levels (checked after XP grant)
 	{
@@ -167,6 +238,11 @@ export const ACHIEVEMENTS: AchievementDef[] = [
 			const [row] = await db.select().from(userLevel).limit(1);
 			return (row?.level ?? 1) >= 5;
 		},
+		progress: async (db) => {
+			const { userLevel } = await import("../db/schema");
+			const [row] = await db.select().from(userLevel).limit(1);
+			return { current: Math.min(row?.level ?? 1, 5), target: 5 };
+		},
 	},
 	{
 		id: "level_10",
@@ -178,6 +254,11 @@ export const ACHIEVEMENTS: AchievementDef[] = [
 			const { userLevel } = await import("../db/schema");
 			const [row] = await db.select().from(userLevel).limit(1);
 			return (row?.level ?? 1) >= 10;
+		},
+		progress: async (db) => {
+			const { userLevel } = await import("../db/schema");
+			const [row] = await db.select().from(userLevel).limit(1);
+			return { current: Math.min(row?.level ?? 1, 10), target: 10 };
 		},
 	},
 ];

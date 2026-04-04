@@ -7,6 +7,12 @@ export default {
 		units: "Unités",
 		metric: "Métrique (kg, cm)",
 		imperial: "Impérial (lbs, in)",
+		appleHealth: "Apple Santé",
+		appleHealthDesc: "Synchroniser poids, taille et pas",
+		enabled: "Activé",
+		disabled: "Désactivé",
+		data: "Données",
+		resetHydration: "Réinitialiser l'hydratation du jour",
 	},
 	tabs: {
 		home: "Accueil",
@@ -18,7 +24,7 @@ export default {
 		title: "Activité",
 		subtitle: "Ton historique d'entraînement",
 		noWorkouts: "Aucune séance enregistrée.",
-		noWorkoutsHint: "Terminez une séance pour la voir ici.",
+		noWorkoutsHint: "Termine une séance pour la voir ici.",
 		deletedSession: "Séance",
 		workoutDetail: "Détail de séance",
 		noWorkoutsThisDay: "Aucune séance ce jour",
@@ -36,11 +42,9 @@ export default {
 	},
 	hydration: {
 		title: "Hydratation",
-		goal: "Objectif (ml)",
-		editGoal: "Objectif d'hydratation",
-		automatic: "Basé sur ton poids : {{value}}L",
-		defaultGoal: "Par défaut : {{value}}L",
-		resetAutomatic: "Réinitialiser",
 		goalReached: "Objectif atteint !",
+	},
+	steps: {
+		enableHealthKit: "Active Apple Santé pour suivre tes pas",
 	},
 } as const;

@@ -1,8 +1,10 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, Text, View } from "react-native";
+import { Alert, Pressable, Text, View } from "react-native";
 import Svg, { Circle, Line as SvgLine, Path, Text as SvgText } from "react-native-svg";
 import { palette } from "../../lib/palette";
+import { deleteWeightLog } from "../../lib/profileQueries";
 import { radius } from "../../lib/tokens";
 import { useUnits } from "../../lib/units";
 
@@ -53,6 +55,7 @@ export function WeightChart({ data }: Props) {
 }
 
 function ChartContent({ data }: { data: DataPoint[] }) {
+	const { t } = useTranslation();
 	const [width, setWidth] = useState(0);
 	const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 	const { displayWeight, weightUnit } = useUnits();
@@ -152,17 +155,16 @@ function ChartContent({ data }: { data: DataPoint[] }) {
 					</SvgText>
 				))}
 				<Path d={chart.dataPath} stroke={palette.accent.DEFAULT} strokeWidth={2.5} fill="none" />
-				{chart.points.map((p, i) => (
+				{selected && (
 					<Circle
-						key={`pt-${p.date}`}
-						cx={chart.toX(p.x)}
-						cy={chart.toY(p.y)}
-						r={selectedIndex === i ? 6 : 4}
-						fill={selectedIndex === i ? palette.accent.DEFAULT : palette.background}
-						stroke={palette.accent.DEFAULT}
+						cx={chart.toX(selected.x)}
+						cy={chart.toY(selected.y)}
+						r={6}
+						fill={palette.accent.DEFAULT}
+						stroke={palette.background}
 						strokeWidth={2}
 					/>
-				))}
+				)}
 			</Svg>
 
 			{/* Hit targets for each point */}
@@ -185,20 +187,43 @@ function ChartContent({ data }: { data: DataPoint[] }) {
 				<View
 					style={{
 						position: "absolute",
-						left: Math.max(8, Math.min(chart.toX(selected.x) - 60, width - 128)),
+						left: Math.max(8, Math.min(chart.toX(selected.x) - 70, width - 148)),
 						top: chart.toY(selected.y) - 52,
+						flexDirection: "row",
+						alignItems: "center",
+						gap: 8,
 						backgroundColor: palette.foreground,
 						borderRadius: radius.sm,
 						paddingHorizontal: 10,
 						paddingVertical: 6,
 					}}
 				>
-					<Text style={{ fontSize: 12, fontWeight: "700", color: palette.background }}>
-						{selected.y} {weightUnit}
-					</Text>
-					<Text style={{ fontSize: 10, color: palette.muted.foreground }}>
-						{formatTooltipDate(selected.date)}
-					</Text>
+					<View>
+						<Text style={{ fontSize: 12, fontWeight: "700", color: palette.background }}>
+							{selected.y} {weightUnit}
+						</Text>
+						<Text style={{ fontSize: 10, color: palette.muted.foreground }}>
+							{formatTooltipDate(selected.date)}
+						</Text>
+					</View>
+					<Pressable
+						onPress={() => {
+							Alert.alert(t("common.delete"), t("profile.deleteEntryMessage"), [
+								{ text: t("common.cancel"), style: "cancel" },
+								{
+									text: t("common.delete"),
+									style: "destructive",
+									onPress: () => {
+										deleteWeightLog(selected.date);
+										setSelectedIndex(null);
+									},
+								},
+							]);
+						}}
+						hitSlop={8}
+					>
+						<Ionicons name="trash-outline" size={14} color={palette.destructive.DEFAULT} />
+					</Pressable>
 				</View>
 			)}
 		</Pressable>

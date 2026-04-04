@@ -7,6 +7,12 @@ export default {
 		units: "Units",
 		metric: "Metric (kg, cm)",
 		imperial: "Imperial (lbs, in)",
+		appleHealth: "Apple Health",
+		appleHealthDesc: "Sync weight, height and steps",
+		enabled: "Enabled",
+		disabled: "Disabled",
+		data: "Data",
+		resetHydration: "Reset today's hydration",
 	},
 	tabs: {
 		home: "Home",
@@ -36,11 +42,9 @@ export default {
 	},
 	hydration: {
 		title: "Hydration",
-		goal: "Goal (ml)",
-		editGoal: "Daily hydration goal",
-		automatic: "Based on your weight: {{value}}L",
-		defaultGoal: "Default: {{value}}L",
-		resetAutomatic: "Reset to automatic",
 		goalReached: "Goal reached!",
+	},
+	steps: {
+		enableHealthKit: "Enable Apple Health to track your steps",
 	},
 } as const;

@@ -4,7 +4,7 @@ export default {
 		configure: "Configurer",
 		search: "Rechercher...",
 		empty: "Aucun exercice.",
-		emptyHint: 'Appuyez sur "Exercice" pour en ajouter un.',
+		emptyHint: 'Appuie sur "Exercice" pour en ajouter un.',
 		sets: "Séries",
 		reps: "Reps",
 		defaultWeight: "Poids par défaut",
