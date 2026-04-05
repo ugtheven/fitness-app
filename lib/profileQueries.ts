@@ -187,12 +187,14 @@ export async function insertGoal(data: {
 	startValue: number;
 	deadline: string;
 }) {
-	// One active goal per type: archive existing active goal of same type
-	await db
-		.update(goals)
-		.set({ status: "abandoned" })
-		.where(and(eq(goals.type, data.type), eq(goals.status, "active")));
-	await db.insert(goals).values(data);
+	// One active goal per type: archive existing then insert — atomic
+	await db.transaction(async (tx) => {
+		await tx
+			.update(goals)
+			.set({ status: "abandoned" })
+			.where(and(eq(goals.type, data.type), eq(goals.status, "active")));
+		await tx.insert(goals).values(data);
+	});
 }
 
 export async function updateGoalStatus(goalId: number, status: "achieved" | "abandoned") {

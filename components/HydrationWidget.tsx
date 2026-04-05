@@ -51,9 +51,13 @@ export function HydrationWidget() {
 	const feedbackOpacity = useSharedValue(0);
 	const feedbackStyle = useAnimatedStyle(() => ({ opacity: feedbackOpacity.value }));
 
-	// Undo state
+	// Undo state with animated countdown
 	const [undoAmount, setUndoAmount] = useState<number | null>(null);
 	const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const undoProgress = useSharedValue(1);
+	const undoBarStyle = useAnimatedStyle(() => ({
+		width: `${Math.round(undoProgress.value * 100)}%`,
+	}));
 
 	// Theme color: blue in progress, green when complete
 	const themeColor = palette.blue.DEFAULT;
@@ -85,9 +89,11 @@ export function HydrationWidget() {
 		feedbackOpacity.value = 1;
 		feedbackOpacity.value = withDelay(600, withTiming(0, { duration: 800 }));
 
-		// Undo
+		// Undo with countdown
 		if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
 		setUndoAmount(amount);
+		undoProgress.value = 1;
+		undoProgress.value = withTiming(0, { duration: 5000 });
 		undoTimerRef.current = setTimeout(() => setUndoAmount(null), 5000);
 	}
 
@@ -153,11 +159,26 @@ export function HydrationWidget() {
 								style={{
 									backgroundColor: `${themeColor}15`,
 									borderRadius: radius.sm,
-									padding: 8,
+									paddingHorizontal: 10,
+									paddingVertical: 8,
 									borderWidth: 1,
 									borderColor: `${themeColor}30`,
+									overflow: "hidden",
 								}}
 							>
+								{/* Countdown bar */}
+								<Animated.View
+									style={[
+										{
+											position: "absolute",
+											bottom: 0,
+											left: 0,
+											height: 2,
+											backgroundColor: `${themeColor}50`,
+										},
+										undoBarStyle,
+									]}
+								/>
 								<Ionicons name="arrow-undo" size={16} color={themeColor} />
 							</Pressable>
 						)}
@@ -229,7 +250,6 @@ export function HydrationWidget() {
 						</Pressable>
 					))}
 				</View>
-
 			</View>
 		</View>
 	);

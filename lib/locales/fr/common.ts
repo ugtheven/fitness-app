@@ -2,6 +2,7 @@ export default {
 	common: {
 		delete: "Supprimer",
 		cancel: "Annuler",
+		error: "Erreur",
 		save: "Enregistrer",
 		create: "Créer",
 		add: "Ajouter",
@@ -10,6 +11,9 @@ export default {
 		name: "Nom",
 		edit: "Modifier",
 		program: "Programme",
+		diet: "Diète",
+		meal: "Repas",
+		food: "Aliment",
 		session: "Séance",
 		exercise: "Exercice",
 		confirm: "Confirmer",

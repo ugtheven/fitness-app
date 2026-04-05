@@ -344,9 +344,21 @@ export default function ExerciseScreen() {
 
 	async function handleUndo() {
 		if (undoSetId == null) return;
-		await db.delete(workoutSets).where(eq(workoutSets.id, undoSetId));
+		await db.transaction(async (tx) => {
+			await tx.delete(workoutSets).where(eq(workoutSets.id, undoSetId));
+			// If exercise was marked completed, revert to pending
+			await tx
+				.update(workoutExercises)
+				.set({ status: "pending" })
+				.where(eq(workoutExercises.id, workoutExerciseId));
+		});
+		// Reset PR ref so the same weight can re-trigger the badge
+		const variantId = exerciseRow?.workoutExercise.exerciseVariantId;
+		const pr = variantId ? await getExercisePR(variantId) : null;
+		prMaxRef.current = pr?.maxWeight ?? null;
 		if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
 		setUndoSetId(null);
+		setNewPRWeight(null);
 		Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
 	}
 

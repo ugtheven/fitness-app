@@ -45,7 +45,10 @@ export function HomeHeader() {
 				</View>
 
 				{/* Avatar → profile */}
-				<Pressable onPress={() => router.push("/(tabs)/profile")} className="active:opacity-70">
+				<Pressable
+					onPress={() => router.push("/(tabs)/profile")}
+					className="flex-row items-center gap-1 active:opacity-70"
+				>
 					<View
 						className="items-center justify-center"
 						style={{
@@ -59,6 +62,7 @@ export function HomeHeader() {
 							{initial}
 						</Text>
 					</View>
+					<Ionicons name="chevron-forward" size={14} color={palette.muted.foreground} />
 				</Pressable>
 			</View>
 
@@ -89,7 +93,7 @@ export function HomeHeader() {
 						className="rounded-full"
 						style={{
 							height: 8,
-							width: `${Math.max(3, Math.round(progress * 100))}%`,
+							width: `${Math.round(progress * 100)}%`,
 							backgroundColor: palette.accent.DEFAULT,
 						}}
 					/>

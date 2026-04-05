@@ -11,6 +11,7 @@ import { db } from "../../db";
 import { workoutSessions } from "../../db/schema";
 import type { Equipment } from "../../lib/exerciseTypes";
 import { EXERCISE_VARIANTS_BY_ID } from "../../lib/exerciseVariants";
+import { getHydrationForDate, getNutritionForDate } from "../../lib/insightQueries";
 import { palette } from "../../lib/palette";
 import { borders, radius, typography } from "../../lib/tokens";
 import { useUnits } from "../../lib/units";
@@ -111,6 +112,16 @@ export default function WorkoutDetailScreen() {
 	const [prMap, setPrMap] = useState<
 		Map<string, { newWeight: number; previousWeight: number | null }>
 	>(new Map());
+	const [dayNutrition, setDayNutrition] = useState<{
+		calories: number;
+		protein: number;
+		carbs: number;
+		fat: number;
+	} | null>(null);
+	const [dayHydration, setDayHydration] = useState<{
+		volumeMl: number;
+		goalMl: number;
+	} | null>(null);
 
 	// Exercise history sheet state
 	const [historySheet, setHistorySheet] = useState<ExerciseHistorySheet | null>(null);
@@ -147,6 +158,17 @@ export default function WorkoutDetailScreen() {
 				});
 			}
 			setPrMap(map);
+
+			// Load nutrition & hydration for the workout date
+			if (sessionData?.date) {
+				const [nutr, hydr] = await Promise.all([
+					getNutritionForDate(sessionData.date),
+					getHydrationForDate(sessionData.date),
+				]);
+				setDayNutrition(nutr);
+				setDayHydration(hydr);
+			}
+
 			setIsLoading(false);
 		}
 		load();
@@ -202,6 +224,30 @@ export default function WorkoutDetailScreen() {
 					<StatPill label={t("workout.totalSets")} value={String(totalSets)} />
 					<StatPill label={t("workout.volume")} value={volumeLabel} />
 				</View>
+
+				{/* Nutrition that day */}
+				{dayNutrition && (
+					<View
+						className="px-5 py-4"
+						style={{ backgroundColor: palette.card.DEFAULT, borderRadius: radius.lg }}
+					>
+						<Text className="text-sm font-semibold text-foreground mb-2">
+							{t("insights.nutritionThatDay")}
+						</Text>
+						<Text className="text-sm" style={{ color: palette.muted.foreground }}>
+							{dayNutrition.calories} {t("nutrition.kcal")} · P: {dayNutrition.protein}
+							{t("nutrition.grams")} · G: {dayNutrition.carbs}
+							{t("nutrition.grams")} · L: {dayNutrition.fat}
+							{t("nutrition.grams")}
+						</Text>
+						{dayHydration && (
+							<Text className="text-sm mt-1" style={{ color: palette.muted.foreground }}>
+								{t("insights.hydrationThatDay")} : {(dayHydration.volumeMl / 1000).toFixed(1)}L (
+								{Math.round((dayHydration.volumeMl / dayHydration.goalMl) * 100)}%)
+							</Text>
+						)}
+					</View>
+				)}
 
 				{/* Exercise list */}
 				{exercises.map((ex) => {

@@ -16,6 +16,7 @@ const TAB_ICONS: Record<
 	index: { active: "home", inactive: "home-outline" },
 	activity: { active: "calendar", inactive: "calendar-outline" },
 	programs: { active: "barbell", inactive: "barbell-outline" },
+	nutrition: { active: "restaurant", inactive: "restaurant-outline" },
 	profile: { active: "person", inactive: "person-outline" },
 };
 

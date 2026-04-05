@@ -220,3 +220,98 @@ export const hydrationLogs = sqliteTable(
 	},
 	(t) => [uniqueIndex("hydration_logs_date_idx").on(t.date)]
 );
+
+// ─── Nutrition ────────────────────────────────────────────────────────────────
+
+export const diets = sqliteTable("diets", {
+	id: int("id").primaryKey({ autoIncrement: true }),
+	name: text("name").notNull(),
+	description: text("description"),
+	calorieGoal: int("calorie_goal"),
+	proteinGoal: int("protein_goal"),
+	carbGoal: int("carb_goal"),
+	fatGoal: int("fat_goal"),
+	isActive: int("is_active", { mode: "boolean" }).notNull().default(false),
+	createdAt: text("created_at").$defaultFn(() => new Date().toISOString()),
+	updatedAt: text("updated_at")
+		.$defaultFn(() => new Date().toISOString())
+		.$onUpdateFn(() => new Date().toISOString()),
+});
+
+export const dietMeals = sqliteTable("diet_meals", {
+	id: int("id").primaryKey({ autoIncrement: true }),
+	dietId: int("diet_id")
+		.notNull()
+		.references(() => diets.id, { onDelete: "cascade" }),
+	name: text("name").notNull(),
+	order: int("order").notNull().default(0),
+	targetTime: text("target_time"),
+	createdAt: text("created_at").$defaultFn(() => new Date().toISOString()),
+});
+
+export const dietMealFoods = sqliteTable("diet_meal_foods", {
+	id: int("id").primaryKey({ autoIncrement: true }),
+	dietMealId: int("diet_meal_id")
+		.notNull()
+		.references(() => dietMeals.id, { onDelete: "cascade" }),
+	foodSource: text("food_source", { enum: ["local", "api", "custom"] }).notNull(),
+	foodId: text("food_id").notNull(),
+	name: text("name").notNull(),
+	quantity: real("quantity").notNull(),
+	caloriesPer100g: real("calories_per_100g").notNull(),
+	proteinPer100g: real("protein_per_100g").notNull(),
+	carbsPer100g: real("carbs_per_100g").notNull(),
+	fatPer100g: real("fat_per_100g").notNull(),
+	order: int("order").notNull().default(0),
+	createdAt: text("created_at").$defaultFn(() => new Date().toISOString()),
+});
+
+export const customFoods = sqliteTable("custom_foods", {
+	id: int("id").primaryKey({ autoIncrement: true }),
+	name: text("name").notNull(),
+	category: text("category", {
+		enum: ["protein", "carb", "fat", "vegetable", "fruit", "dairy", "other"],
+	})
+		.notNull()
+		.default("other"),
+	caloriesPer100g: real("calories_per_100g").notNull(),
+	proteinPer100g: real("protein_per_100g").notNull(),
+	carbsPer100g: real("carbs_per_100g").notNull(),
+	fatPer100g: real("fat_per_100g").notNull(),
+	createdAt: text("created_at").$defaultFn(() => new Date().toISOString()),
+});
+
+export const cachedApiFoods = sqliteTable("cached_api_foods", {
+	barcode: text("barcode").primaryKey(),
+	name: text("name").notNull(),
+	caloriesPer100g: real("calories_per_100g"),
+	proteinPer100g: real("protein_per_100g"),
+	carbsPer100g: real("carbs_per_100g"),
+	fatPer100g: real("fat_per_100g"),
+	imageUrl: text("image_url"),
+	cachedAt: text("cached_at").$defaultFn(() => new Date().toISOString()),
+});
+
+export const dailyMealLogs = sqliteTable(
+	"daily_meal_logs",
+	{
+		id: int("id").primaryKey({ autoIncrement: true }),
+		date: text("date").notNull(),
+		dietId: int("diet_id").references(() => diets.id, { onDelete: "set null" }),
+		dietMealId: int("diet_meal_id").references(() => dietMeals.id, { onDelete: "set null" }),
+		mealName: text("meal_name").notNull(),
+		order: int("order").notNull().default(0),
+		status: text("status", { enum: ["confirmed", "skipped", "cheat"] })
+			.notNull()
+			.default("confirmed"),
+		totalCalories: real("total_calories").notNull().default(0),
+		totalProtein: real("total_protein").notNull().default(0),
+		totalCarbs: real("total_carbs").notNull().default(0),
+		totalFat: real("total_fat").notNull().default(0),
+		loggedAt: text("logged_at").$defaultFn(() => new Date().toISOString()),
+	},
+	(t) => [
+		index("daily_meal_logs_date_idx").on(t.date),
+		uniqueIndex("daily_meal_logs_date_meal_idx").on(t.date, t.dietMealId),
+	]
+);

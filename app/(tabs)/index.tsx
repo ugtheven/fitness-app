@@ -10,6 +10,7 @@ import { BottomDrawer } from "../../components/BottomDrawer";
 import { Button } from "../../components/Button";
 import { HomeHeader } from "../../components/HomeHeader";
 import { HydrationWidget } from "../../components/HydrationWidget";
+import { NutritionWidget } from "../../components/NutritionWidget";
 import { StepsWidget } from "../../components/StepsWidget";
 import { db } from "../../db";
 import {
@@ -71,7 +72,7 @@ export default function HomeScreen() {
 			return;
 		}
 
-		launchSession(sessionId);
+		await launchSession(sessionId);
 	}
 
 	async function launchSession(sessionId: number) {
@@ -139,6 +140,9 @@ export default function HomeScreen() {
 
 			setDrawerVisible(false);
 			router.push(`/workout/${workoutSessionId}`);
+		} catch (e) {
+			console.error("Failed to launch session:", e);
+			Alert.alert(t("common.error"), String(e));
 		} finally {
 			setLaunchingSessionId(null);
 		}
@@ -161,6 +165,8 @@ export default function HomeScreen() {
 				<HydrationWidget />
 
 				<StepsWidget />
+
+				<NutritionWidget />
 
 				{activeProgram ? (
 					<Pressable onPress={() => setDrawerVisible(true)} className="active:opacity-70">

@@ -3,15 +3,32 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
 import { palette } from "../lib/palette";
-import { borders, radius } from "../lib/tokens";
+import { radius } from "../lib/tokens";
+
+export type DayModules = {
+	workout: boolean;
+	diet: boolean;
+	hydration: boolean;
+	steps: boolean;
+};
 
 type CalendarProps = {
-	selectedDate: string | null;
-	onSelectDate: (date: string | null) => void;
-	workoutDates: Set<string>;
+	onSelectDate: (date: string) => void;
+	dayModules: Map<string, DayModules>;
 	displayMonth: Date;
 	onChangeMonth: (date: Date) => void;
 };
+
+// Dot config
+const DOT_SIZE = 4;
+const DOT_GAP = 3;
+const DAY_CELL_HEIGHT = 48;
+const DOT_COLORS = [
+	palette.foreground,
+	palette.green.DEFAULT,
+	palette.blue.DEFAULT,
+	palette.orange.DEFAULT,
+] as const;
 
 /** Format a Date as YYYY-MM-DD */
 function toDateString(d: Date): string {
@@ -30,14 +47,8 @@ function daysInMonth(year: number, month: number): number {
 	return new Date(year, month + 1, 0).getDate();
 }
 
-export function Calendar({
-	selectedDate,
-	onSelectDate,
-	workoutDates,
-	displayMonth,
-	onChangeMonth,
-}: CalendarProps) {
-	const { i18n } = useTranslation();
+export function Calendar({ onSelectDate, dayModules, displayMonth, onChangeMonth }: CalendarProps) {
+	const { t, i18n } = useTranslation();
 	const locale = i18n.language;
 
 	const year = displayMonth.getFullYear();
@@ -45,25 +56,20 @@ export function Calendar({
 
 	const todayStr = toDateString(new Date());
 
-	// Month label via Intl
 	const monthLabel = useMemo(() => {
 		const fmt = new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" });
 		const label = fmt.format(displayMonth);
 		return label.charAt(0).toUpperCase() + label.slice(1);
-	}, [locale, year, month]);
+	}, [locale, displayMonth]);
 
-	// Weekday headers (narrow, starting Monday)
 	const weekdayHeaders = useMemo(() => {
 		const fmt = new Intl.DateTimeFormat(locale, { weekday: "narrow" });
-		// Generate Mon–Sun labels
 		return Array.from({ length: 7 }, (_, i) => {
-			// 2024-01-01 is a Monday
 			const d = new Date(2024, 0, 1 + i);
 			return fmt.format(d).toUpperCase();
 		});
 	}, [locale]);
 
-	// Build grid cells
 	const cells = useMemo(() => {
 		const totalDays = daysInMonth(year, month);
 		const firstDay = new Date(year, month, 1);
@@ -72,7 +78,6 @@ export function Calendar({
 		const grid: (number | null)[] = [];
 		for (let i = 0; i < startOffset; i++) grid.push(null);
 		for (let d = 1; d <= totalDays; d++) grid.push(d);
-		// Pad to fill last row
 		while (grid.length % 7 !== 0) grid.push(null);
 		return grid;
 	}, [year, month]);
@@ -91,7 +96,7 @@ export function Calendar({
 	}
 
 	return (
-		<View className="px-4 pt-4 pb-4">
+		<View className="px-6 pt-4 pb-4">
 			{/* Header */}
 			<View className="mb-4 flex-row items-center justify-between">
 				<Pressable
@@ -99,40 +104,28 @@ export function Calendar({
 					hitSlop={12}
 					accessibilityLabel="Previous month"
 					className="items-center justify-center"
-					style={{
-						width: 36,
-						height: 36,
-						borderRadius: radius.md,
-						backgroundColor: palette.muted.DEFAULT,
-					}}
+					style={{ width: 36, height: 36 }}
 				>
-					<Ionicons name="chevron-back" size={18} color={palette.foreground} />
+					<Ionicons name="chevron-back" size={18} color={palette.muted.foreground} />
 				</Pressable>
 
-				<Pressable onPress={() => onSelectDate(null)} hitSlop={8}>
-					<Text className="text-base font-bold text-foreground">{monthLabel}</Text>
-				</Pressable>
+				<Text className="text-base font-bold text-foreground">{monthLabel}</Text>
 
 				<Pressable
 					onPress={goToNextMonth}
 					hitSlop={12}
 					accessibilityLabel="Next month"
 					className="items-center justify-center"
-					style={{
-						width: 36,
-						height: 36,
-						borderRadius: radius.md,
-						backgroundColor: palette.muted.DEFAULT,
-					}}
+					style={{ width: 36, height: 36 }}
 				>
-					<Ionicons name="chevron-forward" size={18} color={palette.foreground} />
+					<Ionicons name="chevron-forward" size={18} color={palette.muted.foreground} />
 				</Pressable>
 			</View>
 
 			{/* Weekday labels */}
 			<View className="mb-2 flex-row">
-				{weekdayHeaders.map((label, i) => (
-					<View key={i} className="flex-1 items-center">
+				{weekdayHeaders.map((label) => (
+					<View key={label} className="flex-1 items-center">
 						<Text className="text-xs font-medium" style={{ color: palette.muted.foreground }}>
 							{label}
 						</Text>
@@ -141,72 +134,128 @@ export function Calendar({
 			</View>
 
 			{/* Day grid */}
-			{Array.from({ length: cells.length / 7 }, (_, row) => (
-				<View key={row} className="flex-row">
-					{cells.slice(row * 7, row * 7 + 7).map((day, col) => {
-						if (day === null) {
-							return <View key={col} className="flex-1 items-center py-1" style={{ height: 48 }} />;
-						}
+			{Array.from({ length: cells.length / 7 }, (_, row) => {
+				const rowKey = `r${row}`;
+				return (
+					<View key={rowKey} className="flex-row">
+						{cells.slice(row * 7, row * 7 + 7).map((day, col) => {
+							const cellKey = `${row}-${col}`;
+							if (day === null) {
+								return (
+									<View
+										key={cellKey}
+										className="flex-1 items-center justify-center"
+										style={{ height: DAY_CELL_HEIGHT }}
+									/>
+								);
+							}
 
-						const dateStr = toDateString(new Date(year, month, day));
-						const isSelected = dateStr === selectedDate;
-						const isToday = dateStr === todayStr;
-						const hasWorkout = workoutDates.has(dateStr);
-						const isPast = dateStr < todayStr;
+							const dateStr = toDateString(new Date(year, month, day));
+							const isToday = dateStr === todayStr;
+							const isPast = dateStr < todayStr;
+							const modules = dayModules.get(dateStr);
 
-						return (
-							<Pressable
-								key={col}
-								onPress={() => handleDayPress(day)}
-								className="flex-1 items-center py-1"
-								style={{ height: 48 }}
-								accessibilityLabel={`${day}`}
-								accessibilityRole="button"
-							>
-								<View
-									className="items-center justify-center"
-									style={[
-										{ width: 34, height: 34, borderRadius: radius.sm },
-										isSelected && { backgroundColor: palette.muted.DEFAULT },
-										isToday &&
-											!isSelected && {
-												borderWidth: borders.emphasis,
-												borderColor: palette.accent.DEFAULT,
-											},
-									]}
+							// Build active dots
+							const dots: string[] = [];
+							if (modules?.workout) dots.push(DOT_COLORS[0]);
+							if (modules?.diet) dots.push(DOT_COLORS[1]);
+							if (modules?.hydration) dots.push(DOT_COLORS[2]);
+							if (modules?.steps) dots.push(DOT_COLORS[3]);
+
+							return (
+								<Pressable
+									key={cellKey}
+									onPress={() => handleDayPress(day)}
+									className="flex-1 items-center justify-center"
+									style={{ height: DAY_CELL_HEIGHT }}
+									accessibilityLabel={`${day}`}
+									accessibilityRole="button"
 								>
+									{/* Today background */}
+									{isToday && (
+										<View
+											style={{
+												position: "absolute",
+												width: 32,
+												height: 32,
+												borderRadius: radius.sm,
+												backgroundColor: palette.muted.DEFAULT,
+											}}
+										/>
+									)}
+
+									{/* Day number */}
 									<Text
-										style={[
-											{ fontSize: 14 },
-											hasWorkout
-												? { fontWeight: "700", color: palette.foreground }
-												: isPast
-													? { fontWeight: "400", color: palette.muted.foreground }
-													: { fontWeight: "400", color: palette.foreground },
-											isSelected && { fontWeight: "700" },
-										]}
+										style={{
+											fontSize: 14,
+											fontWeight: isToday || dots.length > 0 ? "600" : "400",
+											color:
+												isPast && dots.length === 0 ? palette.muted.foreground : palette.foreground,
+										}}
 									>
 										{day}
 									</Text>
-								</View>
 
-								{/* Workout dot */}
-								{hasWorkout && (
-									<View
-										style={{
-											width: 5,
-											height: 5,
-											borderRadius: 2.5,
-											backgroundColor: palette.accent.DEFAULT,
-											marginTop: 2,
-										}}
-									/>
-								)}
-							</Pressable>
-						);
-					})}
-				</View>
-			))}
+									{/* Dots */}
+									{dots.length > 0 && (
+										<View
+											style={{
+												flexDirection: "row",
+												gap: DOT_GAP,
+												marginTop: 3,
+											}}
+										>
+											{dots.map((color, i) => {
+												const dotKey = `d${i}`;
+												return (
+													<View
+														key={dotKey}
+														style={{
+															width: DOT_SIZE,
+															height: DOT_SIZE,
+															borderRadius: DOT_SIZE / 2,
+															backgroundColor: color,
+														}}
+													/>
+												);
+											})}
+										</View>
+									)}
+								</Pressable>
+							);
+						})}
+					</View>
+				);
+			})}
+
+			{/* Legend */}
+			<View
+				className="flex-row justify-center gap-4 mt-2 pt-2"
+				style={{ borderTopWidth: 1, borderTopColor: palette.border }}
+			>
+				{(
+					[
+						{ color: DOT_COLORS[0], label: t("activity.legendWorkout") },
+						{ color: DOT_COLORS[1], label: t("activity.legendDiet") },
+						{ color: DOT_COLORS[2], label: t("activity.legendHydration") },
+						{ color: DOT_COLORS[3], label: t("activity.legendSteps") },
+					] as const
+				).map(({ color, label }) => (
+					<View key={label} className="flex-row items-center gap-1.5">
+						<View
+							style={{
+								width: DOT_SIZE,
+								height: DOT_SIZE,
+								borderRadius: DOT_SIZE / 2,
+								backgroundColor: color,
+							}}
+						/>
+						<Text className="text-xs" style={{ color: palette.muted.foreground }}>
+							{label}
+						</Text>
+					</View>
+				))}
+			</View>
 		</View>
 	);
 }

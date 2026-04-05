@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AppState, Pressable, Text, View } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
@@ -27,6 +28,9 @@ export function StepsWidget() {
 	const [steps, setSteps] = useState<number | null>(null);
 	const [hkEnabled, setHkEnabled] = useState<boolean | null>(null);
 
+	// Track previous milestone state for celebration
+	const prevMilestonesRef = useRef({ reached5k: false, reached10k: false });
+
 	const loadSteps = useCallback(() => {
 		isHealthKitEnabled().then(setHkEnabled);
 		fetchTodaySteps().then(async (s) => {
@@ -34,6 +38,15 @@ export function StepsWidget() {
 			if (s > 0) {
 				const result = await grantStepsXpIfNeeded(s, todayStr());
 				if (result?.leveledUp) showLevelUpToast(result.newLevel);
+
+				// Celebrate milestone transitions
+				const prev = prevMilestonesRef.current;
+				if (s >= GOAL_10K && !prev.reached10k) {
+					Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+				} else if (s >= GOAL_5K && !prev.reached5k) {
+					Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+				}
+				prevMilestonesRef.current = { reached5k: s >= GOAL_5K, reached10k: s >= GOAL_10K };
 			}
 		});
 	}, [showLevelUpToast]);

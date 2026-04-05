@@ -14,6 +14,19 @@ export type AchievementDef = {
 	progress?: (db: Database) => Promise<{ current: number; target: number }>;
 };
 
+// ─── Date helpers (DST-safe, pure string comparison) ───────────────────────
+
+function todayStr(): string {
+	const now = new Date();
+	return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
+function prevDay(dateStr: string): string {
+	const [y, m, d] = dateStr.split("-").map(Number);
+	const date = new Date(y, m - 1, d - 1);
+	return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 async function countCompletedWorkouts(db: Database): Promise<number> {
@@ -36,7 +49,6 @@ async function countTrackedExercises(db: Database): Promise<number> {
 }
 
 async function hydrationStreak(db: Database, requiredDays: number): Promise<boolean> {
-	// Get the last N days where goal was met, most recent first
 	const logs = await db
 		.select({ date: hydrationLogs.date })
 		.from(hydrationLogs)
@@ -46,20 +58,12 @@ async function hydrationStreak(db: Database, requiredDays: number): Promise<bool
 
 	if (logs.length < requiredDays) return false;
 
-	// The most recent log must be today or yesterday (streak still active)
-	const now = new Date();
-	const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-	const yesterday = new Date(now.getTime() - 86400000);
-	const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, "0")}-${String(yesterday.getDate()).padStart(2, "0")}`;
+	const today = todayStr();
+	const yesterday = prevDay(today);
+	if (logs[0].date !== today && logs[0].date < yesterday) return false;
 
-	if (logs[0].date !== today && logs[0].date !== yesterdayStr) return false;
-
-	// Check that the dates are consecutive
 	for (let i = 0; i < logs.length - 1; i++) {
-		const current = new Date(logs[i].date);
-		const next = new Date(logs[i + 1].date);
-		const diffMs = current.getTime() - next.getTime();
-		if (Math.round(diffMs / 86400000) !== 1) return false;
+		if (logs[i + 1].date !== prevDay(logs[i].date)) return false;
 	}
 	return true;
 }
@@ -73,20 +77,17 @@ async function currentHydrationStreak(db: Database): Promise<number> {
 
 	if (logs.length === 0) return 0;
 
-	const now = new Date();
-	const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-	const yesterday = new Date(now.getTime() - 86400000);
-	const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, "0")}-${String(yesterday.getDate()).padStart(2, "0")}`;
-
-	if (logs[0].date !== today && logs[0].date !== yesterdayStr) return 0;
+	const today = todayStr();
+	const yesterday = prevDay(today);
+	if (logs[0].date !== today && logs[0].date < yesterday) return 0;
 
 	let streak = 1;
 	for (let i = 0; i < logs.length - 1; i++) {
-		const current = new Date(logs[i].date);
-		const next = new Date(logs[i + 1].date);
-		const diffMs = current.getTime() - next.getTime();
-		if (Math.round(diffMs / 86400000) !== 1) break;
-		streak++;
+		if (logs[i + 1].date === prevDay(logs[i].date)) {
+			streak++;
+		} else {
+			break;
+		}
 	}
 	return streak;
 }

@@ -90,15 +90,17 @@ export async function grantXp(
  * Call on app startup or from debug tools.
  */
 export async function recalculateLevel(): Promise<void> {
-	const [row] = await db
-		.select({ total: sql<number>`COALESCE(SUM(${xpLogs.amount}), 0)` })
-		.from(xpLogs);
-	const totalXp = row?.total ?? 0;
-	const level = levelForXp(totalXp);
-	await db
-		.update(userLevel)
-		.set({ totalXp, level, updatedAt: new Date().toISOString() })
-		.where(eq(userLevel.id, 1));
+	await db.transaction(async (tx) => {
+		const [row] = await tx
+			.select({ total: sql<number>`COALESCE(SUM(${xpLogs.amount}), 0)` })
+			.from(xpLogs);
+		const totalXp = row?.total ?? 0;
+		const level = levelForXp(totalXp);
+		await tx
+			.update(userLevel)
+			.set({ totalXp, level, updatedAt: new Date().toISOString() })
+			.where(eq(userLevel.id, 1));
+	});
 }
 
 /**

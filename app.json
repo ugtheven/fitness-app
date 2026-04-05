@@ -30,6 +30,12 @@
 				{
 					"NSHealthShareUsageDescription": "This app reads your weight, height and step count from Apple Health."
 				}
+			],
+			[
+				"expo-camera",
+				{
+					"cameraPermission": "This app uses the camera to scan food barcodes."
+				}
 			]
 		]
 	}
