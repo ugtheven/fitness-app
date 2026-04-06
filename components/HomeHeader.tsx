@@ -3,6 +3,7 @@ import { useLiveQuery } from "drizzle-orm/expo-sqlite";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
+import { useAuth } from "../lib/auth";
 import { palette } from "../lib/palette";
 import { radius } from "../lib/tokens";
 import { xpProgressInLevel } from "../lib/xp";
@@ -11,6 +12,7 @@ import { getUserLevelQuery } from "../lib/xpQueries";
 export function HomeHeader() {
 	const { t, i18n } = useTranslation();
 	const router = useRouter();
+	const { user } = useAuth();
 
 	// Level data
 	const { data: levelData = [] } = useLiveQuery(getUserLevelQuery());
@@ -19,7 +21,8 @@ export function HomeHeader() {
 	const totalXp = row?.totalXp ?? 0;
 	const { current, needed, progress } = xpProgressInLevel(totalXp);
 
-	const userName = "Ugo";
+	const fullName = (user?.user_metadata?.full_name as string) ?? user?.email?.split("@")[0] ?? "";
+	const userName = fullName.split(" ")[0];
 
 	// Formatted date
 	const now = new Date();

@@ -13,6 +13,28 @@ export default {
 		disabled: "Désactivé",
 		data: "Données",
 		resetHydration: "Réinitialiser l'hydratation du jour",
+		cloudBackup: "Sauvegarde cloud",
+		lastBackup: "Dernière sauvegarde",
+		noBackup: "Aucune sauvegarde",
+		backupEntries: "{{count}} entrées",
+		backupNow: "Sauvegarder maintenant",
+		restoreFromCloud: "Restaurer depuis le cloud",
+		restoreWarning:
+			"La restauration remplace toutes les données locales. Cette action est irréversible.",
+		backupSuccess: "Sauvegarde terminée",
+		restoreSuccess: "Données restaurées avec succès",
+		backupError: "Échec de la sauvegarde",
+		restoreError: "Échec de la restauration",
+		restoreConfirmTitle: "Restaurer les données ?",
+		restoreConfirmMessage:
+			"Toutes vos données locales seront remplacées par la sauvegarde. Cette action est irréversible.",
+		backupConfirmTitle: "Sauvegarder les données ?",
+		backupConfirmMessage: "Ceci écrasera votre sauvegarde cloud précédente.",
+		backupInProgress: "Sauvegarde en cours…",
+		restoreInProgress: "Restauration en cours…",
+		updateRequired: "Veuillez mettre à jour l'app pour restaurer cette sauvegarde.",
+		invalidBackup: "Le fichier de sauvegarde est corrompu ou invalide.",
+		noBackupFound: "Aucune sauvegarde trouvée dans le cloud.",
 	},
 	tabs: {
 		home: "Accueil",
@@ -60,5 +82,13 @@ export default {
 	},
 	steps: {
 		enableHealthKit: "Active Apple Santé pour suivre tes pas",
+	},
+	auth: {
+		signInGoogle: "Se connecter avec Google",
+		skipAuth: "Continuer sans compte",
+		signOut: "Se déconnecter",
+		account: "Compte",
+		notConnected: "Non connecté",
+		signIn: "Se connecter",
 	},
 } as const;

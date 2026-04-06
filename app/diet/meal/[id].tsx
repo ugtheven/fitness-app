@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { useLiveQuery } from "drizzle-orm/expo-sqlite";
 import * as Haptics from "expo-haptics";
 import { router, useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -16,24 +16,28 @@ import { NumberField } from "../../../components/NumberField";
 import { ScreenHeader } from "../../../components/ScreenHeader";
 import { SearchField } from "../../../components/SearchField";
 import { db } from "../../../db";
-import { customFoods, dietMealFoods, dietMeals, diets } from "../../../db/schema";
+import { dietMealFoods, dietMeals, diets } from "../../../db/schema";
+import { normalizeFoodNames } from "../../../lib/api";
 import { FOOD_BASES } from "../../../lib/foodCatalog";
 import { cacheApiFood, getCachedFood } from "../../../lib/foodQueries";
 import type { FoodBase, FoodCategory } from "../../../lib/foodTypes";
+import { i18n } from "../../../lib/i18n";
 import { importMealFoods } from "../../../lib/nutritionQueries";
 import type { OffProduct } from "../../../lib/openFoodFacts";
-import { searchByBarcode, searchByName } from "../../../lib/openFoodFacts";
+import { searchByBarcode } from "../../../lib/openFoodFacts";
 import { palette } from "../../../lib/palette";
 import { radius } from "../../../lib/tokens";
 
 type FoodRow = typeof dietMealFoods.$inferSelect;
-type SourceTab = "local" | "api" | "scan" | "custom" | "import";
+type SourceTab = "local" | "scan" | "import";
 
 type SelectedFood = {
-	source: "local" | "api" | "custom";
+	source: "local" | "api";
 	id: string;
 	nameKey: string;
 	name: string;
+	nameEn: string | null;
+	nameFr: string | null;
 	category: string;
 	caloriesPer100g: number;
 	proteinPer100g: number;
@@ -54,11 +58,19 @@ const ALL_CATEGORIES: FoodCategory[] = [
 
 const SOURCE_TABS: { key: SourceTab; icon: React.ComponentProps<typeof Ionicons>["name"] }[] = [
 	{ key: "local", icon: "list-outline" },
-	{ key: "api", icon: "search-outline" },
 	{ key: "scan", icon: "barcode-outline" },
-	{ key: "custom", icon: "create-outline" },
 	{ key: "import", icon: "download-outline" },
 ];
+
+function getFoodDisplayName(item: FoodRow): string {
+	if (item.foodSource === "local") {
+		return i18n.t(`nutrition.foods.${item.foodId}`);
+	}
+	const lang = i18n.language?.slice(0, 2);
+	if (lang === "fr" && item.nameFr) return item.nameFr;
+	if (lang === "en" && item.nameEn) return item.nameEn;
+	return item.name;
+}
 
 export default function MealScreen() {
 	const { t } = useTranslation();
@@ -76,11 +88,6 @@ export default function MealScreen() {
 	const [sourceTab, setSourceTab] = useState<SourceTab>("local");
 	const [search, setSearch] = useState("");
 	const [categoryFilter, setCategoryFilter] = useState<FoodCategory | null>(null);
-
-	// API state
-	const [apiResults, setApiResults] = useState<OffProduct[]>([]);
-	const [apiLoading, setApiLoading] = useState(false);
-	const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	// Scanner state
 	const [scannerOpen, setScannerOpen] = useState(false);
@@ -105,8 +112,6 @@ export default function MealScreen() {
 			.orderBy(dietMealFoods.order)
 	);
 
-	const { data: customFoodRows = [] } = useLiveQuery(db.select().from(customFoods));
-
 	// Import queries
 	const { data: allDiets = [] } = useLiveQuery(db.select().from(diets));
 	const { data: importMeals = [] } = useLiveQuery(
@@ -117,30 +122,6 @@ export default function MealScreen() {
 			.orderBy(dietMeals.order)
 	);
 
-	// API debounce search with stale guard
-	useEffect(() => {
-		if (sourceTab !== "api") return;
-		if (debounceRef.current) clearTimeout(debounceRef.current);
-		const query = search.trim();
-		if (!query) {
-			setApiResults([]);
-			return;
-		}
-		let stale = false;
-		debounceRef.current = setTimeout(async () => {
-			setApiLoading(true);
-			const results = await searchByName(query);
-			if (!stale) {
-				setApiResults(results);
-				setApiLoading(false);
-			}
-		}, 300);
-		return () => {
-			stale = true;
-			if (debounceRef.current) clearTimeout(debounceRef.current);
-		};
-	}, [search, sourceTab]);
-
 	function openDrawer() {
 		setEditingId(null);
 		setStep(1);
@@ -149,7 +130,6 @@ export default function MealScreen() {
 		setSearch("");
 		setCategoryFilter(null);
 		setSourceTab("local");
-		setApiResults([]);
 		setScanResult(null);
 		setScanNotFound(false);
 		setImportDietId(null);
@@ -159,10 +139,12 @@ export default function MealScreen() {
 	const openEditDrawer = useCallback((item: FoodRow) => {
 		setEditingId(item.id);
 		setSelected({
-			source: item.foodSource as "local" | "api" | "custom",
+			source: item.foodSource as SelectedFood["source"],
 			id: item.foodId,
 			nameKey: item.foodId,
 			name: item.name,
+			nameEn: item.nameEn,
+			nameFr: item.nameFr,
 			category: "other",
 			caloriesPer100g: item.caloriesPer100g,
 			proteinPer100g: item.proteinPer100g,
@@ -197,6 +179,8 @@ export default function MealScreen() {
 			id: food.id,
 			nameKey: food.nameKey,
 			name: t(`nutrition.foods.${food.nameKey}`),
+			nameEn: null,
+			nameFr: null,
 			category: food.category,
 			caloriesPer100g: food.caloriesPer100g,
 			proteinPer100g: food.proteinPer100g,
@@ -215,28 +199,13 @@ export default function MealScreen() {
 			id: product.barcode,
 			nameKey: product.barcode,
 			name: product.name,
+			nameEn: product.nameEn,
+			nameFr: product.nameFr,
 			category: "other",
 			caloriesPer100g: product.caloriesPer100g ?? 0,
 			proteinPer100g: product.proteinPer100g ?? 0,
 			carbsPer100g: product.carbsPer100g ?? 0,
 			fatPer100g: product.fatPer100g ?? 0,
-			defaultQuantity: 100,
-		});
-		setQuantity(100);
-		setStep(2);
-	}
-
-	function pickCustomFood(item: (typeof customFoodRows)[0]) {
-		setSelected({
-			source: "custom",
-			id: String(item.id),
-			nameKey: String(item.id),
-			name: item.name,
-			category: "other",
-			caloriesPer100g: item.caloriesPer100g,
-			proteinPer100g: item.proteinPer100g,
-			carbsPer100g: item.carbsPer100g,
-			fatPer100g: item.fatPer100g,
 			defaultQuantity: 100,
 		});
 		setQuantity(100);
@@ -252,20 +221,28 @@ export default function MealScreen() {
 		setTimeout(() => setDrawerOpen(true), 300);
 		// Check cache first to avoid unnecessary network calls
 		const cached = await getCachedFood(barcode);
+		let product: OffProduct | null = null;
 		if (cached) {
-			setScanResult({
+			product = {
 				barcode: cached.barcode,
 				name: cached.name,
+				nameEn: null,
+				nameFr: null,
 				caloriesPer100g: cached.caloriesPer100g,
 				proteinPer100g: cached.proteinPer100g,
 				carbsPer100g: cached.carbsPer100g,
 				fatPer100g: cached.fatPer100g,
 				imageUrl: cached.imageUrl,
-			});
-			setScanLoading(false);
-			return;
+			};
+			// Normalize cached product names
+			const [n] = await normalizeFoodNames([product.name]);
+			if (n) {
+				const lang = i18n.language?.slice(0, 2) ?? "en";
+				product = { ...product, name: lang === "fr" ? n.fr : n.en, nameEn: n.en, nameFr: n.fr };
+			}
+		} else {
+			product = await searchByBarcode(barcode);
 		}
-		const product = await searchByBarcode(barcode);
 		setScanLoading(false);
 		if (product) {
 			setScanResult(product);
@@ -284,6 +261,8 @@ export default function MealScreen() {
 				foodSource: selected.source,
 				foodId: selected.id,
 				name: selected.name,
+				nameEn: selected.nameEn,
+				nameFr: selected.nameFr,
 				quantity,
 				caloriesPer100g: selected.caloriesPer100g,
 				proteinPer100g: selected.proteinPer100g,
@@ -374,7 +353,7 @@ export default function MealScreen() {
 						{foodRows.map((item) => (
 							<FoodCard
 								key={item.id}
-								name={item.name}
+								name={getFoodDisplayName(item)}
 								quantity={item.quantity}
 								calories={(item.caloriesPer100g * item.quantity) / 100}
 								protein={(item.proteinPer100g * item.quantity) / 100}
@@ -538,83 +517,6 @@ export default function MealScreen() {
 							</>
 						)}
 
-						{/* API SEARCH TAB */}
-						{sourceTab === "api" && (
-							<>
-								<SearchField
-									value={search}
-									onChangeText={setSearch}
-									placeholder={t("nutrition.searchFood")}
-								/>
-								{apiLoading ? (
-									<View className="items-center py-8">
-										<ActivityIndicator color={palette.muted.foreground} />
-										<Text className="mt-2 text-sm text-muted-foreground">
-											{t("nutrition.searching")}
-										</Text>
-									</View>
-								) : apiResults.length === 0 && search.trim() ? (
-									<View className="items-center py-8">
-										<Text className="text-sm text-muted-foreground">
-											{t("nutrition.noResults")}
-										</Text>
-									</View>
-								) : (
-									<ScrollView showsVerticalScrollIndicator={false}>
-										<View className="gap-2">
-											{apiResults.map((product) => {
-												const hasIncomplete =
-													product.caloriesPer100g == null || product.proteinPer100g == null;
-												return (
-													<Pressable
-														key={product.barcode}
-														onPress={() => pickApiFood(product)}
-														className="active:opacity-70"
-													>
-														<View
-															className="flex-row items-center bg-background px-4 py-3"
-															style={{ borderRadius: radius.md }}
-														>
-															<View className="flex-1 gap-1">
-																<Text
-																	className="text-base font-semibold text-foreground"
-																	numberOfLines={1}
-																>
-																	{product.name}
-																</Text>
-																<Text className="text-xs text-muted-foreground">
-																	{product.caloriesPer100g ?? "?"} {t("nutrition.kcal")} · P:{" "}
-																	{product.proteinPer100g ?? "?"}
-																	{t("nutrition.grams")} · G: {product.carbsPer100g ?? "?"}
-																	{t("nutrition.grams")} · L: {product.fatPer100g ?? "?"}
-																	{t("nutrition.grams")}
-																</Text>
-																{hasIncomplete && (
-																	<Text
-																		className="text-xs"
-																		style={{
-																			color: palette.orange.DEFAULT,
-																		}}
-																	>
-																		{t("nutrition.incompleteData")}
-																	</Text>
-																)}
-															</View>
-															<Ionicons
-																name="chevron-forward"
-																size={18}
-																color={palette.muted.foreground}
-															/>
-														</View>
-													</Pressable>
-												);
-											})}
-										</View>
-									</ScrollView>
-								)}
-							</>
-						)}
-
 						{/* SCAN TAB — shows results after scanning */}
 						{sourceTab === "scan" && (
 							<View className="items-center gap-4 py-4">
@@ -675,61 +577,6 @@ export default function MealScreen() {
 									</>
 								) : null}
 							</View>
-						)}
-
-						{/* CUSTOM TAB */}
-						{sourceTab === "custom" && (
-							<>
-								<Button
-									variant="glow"
-									fullWidth
-									label={t("nutrition.createCustomFood")}
-									startIcon={<Ionicons name="add" size={20} />}
-									onPress={() => {
-										setDrawerOpen(false);
-										router.push("/diet/custom-food");
-									}}
-								/>
-								<ScrollView showsVerticalScrollIndicator={false}>
-									<View className="gap-2">
-										{customFoodRows.map((item) => (
-											<Pressable
-												key={item.id}
-												onPress={() => pickCustomFood(item)}
-												className="active:opacity-70"
-											>
-												<View
-													className="flex-row items-center bg-background px-4 py-3"
-													style={{ borderRadius: radius.md }}
-												>
-													<View className="flex-1 gap-1">
-														<Text className="text-base font-semibold text-foreground">
-															{item.name}
-														</Text>
-														<Text className="text-xs text-muted-foreground">
-															{item.caloriesPer100g} {t("nutrition.kcal")} · P:{" "}
-															{item.proteinPer100g}
-															{t("nutrition.grams")} · G: {item.carbsPer100g}
-															{t("nutrition.grams")} · L: {item.fatPer100g}
-															{t("nutrition.grams")}
-														</Text>
-													</View>
-													<Ionicons
-														name="chevron-forward"
-														size={18}
-														color={palette.muted.foreground}
-													/>
-												</View>
-											</Pressable>
-										))}
-										{customFoodRows.length === 0 && (
-											<Text className="py-4 text-center text-sm text-muted-foreground">
-												{t("nutrition.noCustomFoods")}
-											</Text>
-										)}
-									</View>
-								</ScrollView>
-							</>
 						)}
 
 						{/* IMPORT TAB */}

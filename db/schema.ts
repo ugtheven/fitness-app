@@ -257,6 +257,8 @@ export const dietMealFoods = sqliteTable("diet_meal_foods", {
 	foodSource: text("food_source", { enum: ["local", "api", "custom"] }).notNull(),
 	foodId: text("food_id").notNull(),
 	name: text("name").notNull(),
+	nameEn: text("name_en"),
+	nameFr: text("name_fr"),
 	quantity: real("quantity").notNull(),
 	caloriesPer100g: real("calories_per_100g").notNull(),
 	proteinPer100g: real("protein_per_100g").notNull(),

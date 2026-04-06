@@ -1,8 +1,11 @@
+import { type NormalizedName, normalizeFoodNames } from "./api";
 import { i18n } from "./i18n";
 
 export type OffProduct = {
 	barcode: string;
 	name: string;
+	nameEn: string | null;
+	nameFr: string | null;
 	caloriesPer100g: number | null;
 	proteinPer100g: number | null;
 	carbsPer100g: number | null;
@@ -26,6 +29,8 @@ function parseProduct(raw: any, lang?: string): OffProduct | null {
 	return {
 		barcode: String(raw.code ?? raw._id ?? ""),
 		name: localizedName || raw.product_name,
+		nameEn: null,
+		nameFr: null,
 		caloriesPer100g: parseNutriment(n["energy-kcal_100g"]),
 		proteinPer100g: parseNutriment(n.proteins_100g),
 		carbsPer100g: parseNutriment(n.carbohydrates_100g),
@@ -48,6 +53,17 @@ function getLang(): string {
 	return i18n.language?.slice(0, 2) ?? "en";
 }
 
+function applyNormalized(product: OffProduct, n: NormalizedName | null): OffProduct {
+	if (!n) return product;
+	const lang = getLang();
+	return {
+		...product,
+		name: lang === "fr" ? n.fr : n.en,
+		nameEn: n.en,
+		nameFr: n.fr,
+	};
+}
+
 export async function searchByName(query: string): Promise<OffProduct[]> {
 	const encoded = encodeURIComponent(query.trim());
 	if (!encoded) return [];
@@ -62,7 +78,8 @@ export async function searchByName(query: string): Promise<OffProduct[]> {
 			const parsed = parseProduct(raw, lang);
 			if (parsed?.barcode) products.push(parsed);
 		}
-		return products;
+		const normalized = await normalizeFoodNames(products.map((p) => p.name));
+		return products.map((p, i) => applyNormalized(p, normalized[i]));
 	} catch {
 		return [];
 	}
@@ -76,7 +93,10 @@ export async function searchByBarcode(barcode: string): Promise<OffProduct | nul
 		if (!res.ok) return null;
 		const data = await res.json();
 		if (data.status !== 1) return null;
-		return parseProduct(data.product, lang);
+		const product = parseProduct(data.product, lang);
+		if (!product) return null;
+		const [n] = await normalizeFoodNames([product.name]);
+		return applyNormalized(product, n);
 	} catch {
 		return null;
 	}
